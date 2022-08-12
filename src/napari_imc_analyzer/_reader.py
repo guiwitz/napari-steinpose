@@ -8,7 +8,7 @@ https://napari.org/stable/plugins/guides.html?#readers
 import numpy as np
 
 
-def napari_get_reader(path):
+def napari_get_reader_mcd(path):
     """A basic implementation of a Reader contribution.
 
     Parameters
