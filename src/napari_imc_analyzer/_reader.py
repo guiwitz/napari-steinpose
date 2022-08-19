@@ -6,6 +6,7 @@ implement multiple readers or even other plugin contributions. see:
 https://napari.org/stable/plugins/guides.html?#readers
 """
 import numpy as np
+from readimc import MCDFile, TXTFile
 
 
 def napari_get_reader_mcd(path):
@@ -29,7 +30,7 @@ def napari_get_reader_mcd(path):
         path = path[0]
 
     # if we know we cannot read the file, we immediately return None.
-    if not path.endswith(".npy"):
+    if not path.endswith(".mcd"):
         return None
 
     # otherwise we return the *function* that can read ``path``.
@@ -58,15 +59,21 @@ def reader_function(path):
         layer. Both "meta", and "layer_type" are optional. napari will
         default to layer_type=="image" if not provided
     """
-    # handle both a string and a list of strings
+
+    '''# handle both a string and a list of strings
     paths = [path] if isinstance(path, str) else path
     # load all files into array
     arrays = [np.load(_path) for _path in paths]
     # stack arrays into single array
-    data = np.squeeze(np.stack(arrays))
+    data = np.squeeze(np.stack(arrays))'''
+
+    with MCDFile(path) as f:
+        acquisition = f.slides[0].acquisitions[0]  # first acquisition of first slide
+        data = f.read_acquisition(acquisition)
+        labels = acquisition.channel_labels
 
     # optional kwargs for the corresponding viewer.add_* method
-    add_kwargs = {}
+    add_kwargs = {'channel_axis': 0, 'name': labels}
 
     layer_type = "image"  # optional, default is "image"
     return [(data, add_kwargs, layer_type)]
