@@ -35,6 +35,7 @@ class MCDWidget(QWidget):
         self.props_table = None
         self.allprops = None
         self.options_file_path = None
+        self.proj = {'mean': np.mean, 'max': np.max, 'min': np.min, 'median': np.median}
 
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
@@ -49,6 +50,12 @@ class MCDWidget(QWidget):
         self.tabs.addTab(self.segmentation, 'Segmentation')
 
         # channels tab
+        self.channels_tab = QWidget()
+        self._channels_tab_layout = QVBoxLayout()
+        self.channels_tab.setLayout(self._channels_tab_layout)
+        self.tabs.addTab(self.channels_tab, 'Channels')
+
+        # options tab
         self.options_tab = QWidget()
         self._options_tab_layout = QVBoxLayout()
         self.options_tab.setLayout(self._options_tab_layout)
@@ -66,6 +73,7 @@ class MCDWidget(QWidget):
         self.summary.setLayout(self._summary_layout)
         self.tabs.addTab(self.summary, 'Summary')
 
+        #/////// Segmentation tab /////////
         self._segmentation_layout.addWidget(QLabel("List of images"))
 
         self.file_list = FolderList(napari_viewer)
@@ -100,6 +108,43 @@ class MCDWidget(QWidget):
         self.check_usegpu = QCheckBox('Use GPU')
         self.run_group.glayout.addWidget(self.check_usegpu)
 
+        self.mainoptions_group = VHGroup('Main options', orientation='G')
+        self._segmentation_layout.addWidget(self.mainoptions_group.gbox)
+
+        self.mainoptions_group.glayout.addWidget(QLabel('Channel to segment'), 0, 0, 1, 1)
+        self.qcbox_channel_to_segment = QComboBox()
+        self.mainoptions_group.glayout.addWidget(self.qcbox_channel_to_segment, 0,1,1,1)
+        self.mainoptions_group.glayout.addWidget(QLabel('Helper channel'), 1, 0, 1, 1)
+        self.qcbox_channel_helper = QComboBox()
+        self.mainoptions_group.glayout.addWidget(self.qcbox_channel_helper, 1,1,1,1)
+        self.diameter_label = QLabel("Diameter", visible=False)
+        self.mainoptions_group.glayout.addWidget(self.diameter_label, 3, 0, 1, 1)
+        self.spinbox_diameter = QSpinBox(visible=False)
+        self.spinbox_diameter.setValue(30)
+        self.spinbox_diameter.setMaximum(1000)
+        self.mainoptions_group.glayout.addWidget(self.spinbox_diameter, 3, 1, 1, 1)
+
+        #/////// Channels tab /////////
+        self.channel_merge_group = VHGroup('Channels to merge', orientation='G')
+        self._channels_tab_layout.addWidget(self.channel_merge_group.gbox)
+        
+        self.channel_merge_group.glayout.addWidget(QLabel('Channels for cell'), 0, 0, 1, 1)
+        self.qlist_merge_cell = QListWidget()
+        self.qlist_merge_cell.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.channel_merge_group.glayout.addWidget(self.qlist_merge_cell, 0,1,1,1)
+
+        self.channel_merge_group.glayout.addWidget(QLabel('Channels for nuclei'), 1, 0, 1, 1)
+        self.qlist_merge_nuclei = QListWidget()
+        self.qlist_merge_nuclei.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.channel_merge_group.glayout.addWidget(self.qlist_merge_nuclei, 1,1,1,1)
+
+        self.qcbox_projection_method = QComboBox()
+        self.qcbox_projection_method.addItems(['max', 'median', 'mean', 'min'])
+        self.qcbox_projection_method.setCurrentIndex(0)
+        self.channel_merge_group.glayout.addWidget(QLabel('Projection type'), 2, 0, 1, 1)
+        self.channel_merge_group.glayout.addWidget(self.qcbox_projection_method, 2,1,1,1)
+
+        #/////// Options tab /////////
         self._options_tab_layout.setAlignment(Qt.AlignTop)
         self.options_group = VHGroup('Segmentation Options', orientation='G')
         self._options_tab_layout.addWidget(self.options_group.gbox)
@@ -108,12 +153,6 @@ class MCDWidget(QWidget):
         self.spinbox_batch_size = QSpinBox()
         self.spinbox_batch_size.setValue(3)
         self.options_group.glayout.addWidget(self.spinbox_batch_size, 0, 1, 1, 1)
-
-        # Not yet implemented
-        # self.options_group.glayout.addWidget(QLabel("Rescaling factor"), 1, 0, 1, 1)
-        # self.spinbox_rescaling = QSpinBox()
-        # self.spinbox_rescaling.setValue(1)
-        # self.options_group.glayout.addWidget(self.spinbox_rescaling, 1, 1, 1, 1)
 
         self.flow_threshold_label = QLabel("Flow threshold")
         self.options_group.glayout.addWidget(self.flow_threshold_label, 3, 0, 1, 1)
@@ -147,7 +186,6 @@ class MCDWidget(QWidget):
             "force it to use the three images as channels"))
         self.options_group.glayout.addWidget(self.check_no_rgb, 6, 0, 1, 1)
 
-
         self.property_options_group = VHGroup('Properties Options', orientation='G')
         self._options_tab_layout.addWidget(self.property_options_group.gbox)
 
@@ -164,23 +202,8 @@ class MCDWidget(QWidget):
         self.qcbox_channel_analysis = QListWidget()
         self.qcbox_channel_analysis.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.property_options_group.glayout.addWidget(self.qcbox_channel_analysis, ind+1,1,1,1)
-        
-        self.mainoptions_group = VHGroup('Main options', orientation='G')
-        self._segmentation_layout.addWidget(self.mainoptions_group.gbox)
 
-        self.mainoptions_group.glayout.addWidget(QLabel('Channel to segment'), 0, 0, 1, 1)
-        self.qcbox_channel_to_segment = QComboBox()
-        self.mainoptions_group.glayout.addWidget(self.qcbox_channel_to_segment, 0,1,1,1)
-        self.mainoptions_group.glayout.addWidget(QLabel('Helper channel'), 1, 0, 1, 1)
-        self.qcbox_channel_helper = QComboBox()
-        self.mainoptions_group.glayout.addWidget(self.qcbox_channel_helper, 1,1,1,1)
-        self.diameter_label = QLabel("Diameter", visible=False)
-        self.mainoptions_group.glayout.addWidget(self.diameter_label, 3, 0, 1, 1)
-        self.spinbox_diameter = QSpinBox(visible=False)
-        self.spinbox_diameter.setValue(30)
-        self.spinbox_diameter.setMaximum(1000)
-        self.mainoptions_group.glayout.addWidget(self.spinbox_diameter, 3, 1, 1, 1)
-
+        #/////// Plots tab /////////
         self.plot_group = VHGroup('Plots')
         self._properties_layout.addWidget(self.plot_group.gbox)
 
@@ -189,6 +212,7 @@ class MCDWidget(QWidget):
         self.plot_group.glayout.addWidget(self.props_to_plot1)
         self.plot_group.glayout.addWidget(self.props_to_plot2)
 
+        #/////// Summary tab /////////
         self.sc = MplCanvas(self, row=1, col=2, width=6, height=4, dpi=100)
         self.toolbar = NavigationToolbar(self.sc, self)
         self.plot_group.glayout.addWidget(self.toolbar)
@@ -240,7 +264,53 @@ class MCDWidget(QWidget):
         self.summary_props_to_plot1.currentIndexChanged.connect(self.update_filterprop)
         self.summary_props_to_plot2.currentIndexChanged.connect(self.update_filterprop)
         self.choose_filtering_prop.currentIndexChanged.connect(self._on_update_filtering_sliders)
-        self.viewer.layers.events.connect(self._on_change_layers)
+        self.viewer.layers.events.inserted.connect(self._on_change_layers)
+
+        self.qlist_merge_cell.itemClicked.connect(self._on_change_merge_cell_selection)
+        self.qlist_merge_nuclei.itemClicked.connect(self._on_change_merge_nuclei_selection)
+        self.qcbox_projection_method.currentTextChanged.connect(self._on_change_merge_cell_selection)
+        self.qcbox_projection_method.currentTextChanged.connect(self._on_change_merge_nuclei_selection)
+
+    def _on_change_merge_cell_selection(self):
+
+        curr_proj = self.proj[self.qcbox_projection_method.currentText()]
+
+        channel_to_merge_cell = []
+        merged_cell_array = np.zeros((20,20), dtype=np.uint8)
+        if len(self.qlist_merge_cell.selectedItems()) > 0:
+            channel_to_merge_cell = [x.row() for x in self.qlist_merge_cell.selectedIndexes()]
+            merged_cell_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_cell], axis=0), axis=0)
+       
+        self.viewer.layers.events.inserted.disconnect(self._on_change_layers)
+        if 'merged_cell' in [x.name for x in self.viewer.layers]:
+            self.viewer.layers['merged_cell'].data = merged_cell_array
+        else:
+            self.viewer.add_image(merged_cell_array, name='merged_cell')
+            self.qcbox_channel_to_segment.addItem('merged_cell')
+            self.qcbox_channel_to_segment.setCurrentIndex(self.qcbox_channel_to_segment.count()-1)
+
+        
+        self.viewer.layers.events.inserted.connect(self._on_change_layers)
+
+    def _on_change_merge_nuclei_selection(self):
+
+        curr_proj = self.proj[self.qcbox_projection_method.currentText()]
+
+        channel_to_merge_nuclei = []
+        merged_nuclei_array = np.zeros((20,20), dtype=np.uint8)
+        if len(self.qlist_merge_nuclei.selectedItems()) > 0:
+            channel_to_merge_nuclei = [x.row() for x in self.qlist_merge_nuclei.selectedIndexes()]
+            merged_nuclei_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_nuclei], axis=0), axis=0)
+
+        self.viewer.layers.events.inserted.disconnect(self._on_change_layers)
+        
+        if 'merged_nuclei' in [x.name for x in self.viewer.layers]:
+            self.viewer.layers['merged_nuclei'].data = merged_nuclei_array
+        else:
+            self.viewer.add_image(merged_nuclei_array, name='merged_nuclei')
+            self.qcbox_channel_helper.addItem('merged_nuclei')
+            self.qcbox_channel_helper.setCurrentIndex(self.qcbox_channel_helper.count()-1)
+        self.viewer.layers.events.inserted.connect(self._on_change_layers)
 
     def open_file(self):
         """Open file selected in list. Returns True if file was opened."""
@@ -257,9 +327,9 @@ class MCDWidget(QWidget):
         image_path = self.file_list.folder_path.joinpath(image_name)
 
         if self.check_no_rgb.isChecked():
-            self.viewer.open(image_path, plugin='napari-aicsimageio', layer_type='image', rgb=False, channel_axis=2)
+            self.viewer.open(image_path, plugin='napari-imc-analyzer')
         else:
-            self.viewer.open(image_path, plugin='napari-aicsimageio',layer_type='image')
+            self.viewer.open(image_path, plugin='napari-imc-analyzer')
 
         if self.output_folder is not None:
             mask_path = Path(self.output_folder).joinpath(image_path.stem+'_mask.tif')
@@ -312,6 +382,7 @@ class MCDWidget(QWidget):
         channel_to_segment, channel_helper, channel_analysis = self.get_channels_to_use()
         channel_analysis_names = [x.text() for x in self.qcbox_channel_analysis.selectedItems()]
         reg_props = [k for k in self.check_props.keys() if self.check_props[k].isChecked()]
+        curr_proj = self.proj[self.qcbox_projection_method.currentText()]
 
         # run cellpose
         segmented, props = run_cellpose(
@@ -328,7 +399,7 @@ class MCDWidget(QWidget):
             channel_measure_names=channel_analysis_names,
             properties=reg_props,
             options_file=self.options_file_path,
-            force_no_rgb=self.check_no_rgb.isChecked(),
+            proj_fun=curr_proj,
         )
 
         self.viewer.layers.events.disconnect(self._on_change_layers)
@@ -358,6 +429,7 @@ class MCDWidget(QWidget):
         channel_to_segment, channel_helper, channel_analysis = self.get_channels_to_use()
         channel_analysis_names = [x.text() for x in self.qcbox_channel_analysis.selectedItems()]
         reg_props = [k for k in self.check_props.keys() if self.check_props[k].isChecked()]
+        curr_proj = self.proj[self.qcbox_projection_method.currentText()]
 
         for batch in file_list_partition:
             _, _ = run_cellpose(
@@ -374,7 +446,7 @@ class MCDWidget(QWidget):
                 channel_measure_names=channel_analysis_names,
                 properties=reg_props,
                 options_file=self.options_file_path,
-                force_no_rgb=self.check_no_rgb.isChecked(),
+                proj_fun=curr_proj,
             )
 
         self._on_click_load_summary()
@@ -384,13 +456,13 @@ class MCDWidget(QWidget):
         As the first choice is None, channels are already incremented by one
         as expected by cellpose"""
         
-        channel_to_segment = 0
-        channel_helper = 0
+        channel_to_segment = None
+        channel_helper = None
         channel_analysis = None
-        if self.qcbox_channel_to_segment.currentText() != 'None':
-            channel_to_segment = self.qcbox_channel_to_segment.currentIndex()
-        if self.qcbox_channel_helper.currentText() != 'None':
-            channel_helper = self.qcbox_channel_helper.currentIndex()
+        if len(self.qlist_merge_cell.selectedItems()) > 0:
+            channel_to_segment = [x.row() for x in self.qlist_merge_cell.selectedIndexes()]
+        if len(self.qlist_merge_nuclei.selectedItems()) > 0:
+            channel_helper = [x.row() for x in self.qlist_merge_nuclei.selectedIndexes()]
         if len(self.qcbox_channel_analysis.selectedItems()) > 0:
             channel_analysis = [x.row() for x in self.qcbox_channel_analysis.selectedIndexes()]
         
@@ -432,6 +504,12 @@ class MCDWidget(QWidget):
         self.qcbox_channel_helper.addItems(['None']+[x.name for x in self.viewer.layers if isinstance(x, Image)])
         self.qcbox_channel_analysis.clear()
         self.qcbox_channel_analysis.addItems([x.name for x in self.viewer.layers if isinstance(x, Image)])
+
+        self.qlist_merge_cell.clear()
+        self.qlist_merge_cell.addItems([x.name for x in self.viewer.layers if isinstance(x, Image)])
+
+        self.qlist_merge_nuclei.clear()
+        self.qlist_merge_nuclei.addItems([x.name for x in self.viewer.layers if isinstance(x, Image)])
 
     def _on_click_load_summary(self):
         """Load summary from folder"""

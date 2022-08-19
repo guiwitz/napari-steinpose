@@ -6,14 +6,14 @@ from skimage.measure import regionprops_table as sk_regionprops_table
 from napari_skimage_regionprops._regionprops import regionprops_table
 import pandas as pd
 import numpy as np
-from aicsimageio import AICSImage
 import yaml
+from readimc import MCDFile
 
 def run_cellpose(image_path, cellpose_model, output_path, scaling_factor=1,
                  diameter=None, flow_threshold=0.4, cellprob_threshold=0.0,
-                 clear_border=True, channel_to_segment=0, channel_helper=0,
+                 clear_border=True, channel_to_segment=None, channel_helper=None,
                  channel_measure=None, channel_measure_names=None, properties=None,
-                 options_file=None, force_no_rgb=False):
+                 options_file=None, proj_fun=np.max):
     """Run cellpose on image.
     
     Parameters
@@ -45,8 +45,8 @@ def run_cellpose(image_path, cellpose_model, output_path, scaling_factor=1,
         list of types of properties to compute. Any of 'intensity', 'perimeter', 'shape', 'position', 'moments'
     options_file: str or Path, default None
         path to yaml options file for cellpose
-    force_no_rgb: bool, default False
-        if image is RGB convert it to multi-channel
+    proj_fun: function
+        function used to compute projection, default np.max
 
     Returns
     -------
@@ -62,50 +62,35 @@ def run_cellpose(image_path, cellpose_model, output_path, scaling_factor=1,
     if properties is None:
         properties = []
 
-    channels = [0, 0]
-    image_aics = [AICSImage(x) for x in image_path]
-    if (len(image_aics[0].dims.shape) == 6) and (not force_no_rgb):
-        image = [x.get_image_data('YXS', C=0, T=0, Z=0) for x in image_aics]
-        is_rgb = True
-        image_measure = [None]*len(image)
+    if channel_to_segment is None:
+        raise ValueError("channel_to_segment must be specified")
     else:
-        #!!! Note that there is a bug in aicsimageio that causes it to place the S dimension in the wrong place.
-        #!!! This is why currently we import S planes separately and stack them.
-        if force_no_rgb:
-            if channel_helper == 0:
-                image = [x.get_image_data('YX', S=np.max([0,channel_to_segment-1]) , T=0, Z=0, C=0) for x in image_aics]
-            else:
-                im1 = [x.get_image_data('YX', S=np.max([0,channel_to_segment-1]) , T=0, Z=0, C=0) for x in image_aics]
-                im2 = [x.get_image_data('YX', S=np.max([0,channel_helper-1]) , T=0, Z=0, C=0) for x in image_aics]
-                image = [np.stack([im1[i], im2[i]], axis=0) for i in range(len(im1))]
-                #image = [x.get_image_data('SYX', S=[np.max([0,channel_to_segment-1]), np.max([0,channel_helper-1])] , T=0, Z=0, C=0) for x in image_aics]
-                channels = [1, 2]
-        else:
-            if channel_helper == 0:
-                image = [x.get_image_data('YX', C=np.max([0,channel_to_segment-1]) , T=0, Z=0) for x in image_aics]
-            else:
-                image = [x.get_image_data('CYX', C=[np.max([0,channel_to_segment-1]), np.max([0,channel_helper-1])] , T=0, Z=0) for x in image_aics]
-                channels = [1, 2]
+        channel_to_segment = np.array(channel_to_segment) - 1
 
-        image_measure=None
+    channels = [0, 0]
+    image = []
+    image_measure=None
+    for p in image_path:
+        with MCDFile(p) as f:
+            acquisition = f.slides[0].acquisitions[0]  # first acquisition of first slide
+            data = f.read_acquisition(acquisition)
+
+        cur_image = proj_fun(data[channel_to_segment, :, :], axis=0)
+        if channel_helper is not None:
+            channel_helper = np.array(channel_helper) - 1
+            image_nuclei = proj_fun(data[channel_helper, :, :], axis=0)
+            cur_image = np.stack([cur_image, image_nuclei], axis=0)
+            channels = [1, 2]
+        image.append(cur_image)
+
         if channel_measure is not None:
-            if force_no_rgb:
-                image_measure = [np.stack([x.get_image_data('YX', S=s, T=0, Z=0, C=0) for s in channel_measure], axis=2) for x in image_aics]
-                #image_measure = [x.get_image_data('YXS', S=channel_measure, T=0, Z=0, C=0) for x in image_aics]
-            else:
-                image_measure = [x.get_image_data('YXC', C=channel_measure, T=0, Z=0) for x in image_aics]
-        else:
-            image_measure = [None]*len(image)
-        is_rgb = False
+            if image_measure is None:
+                image_measure = []
+            cur_image_measure = np.moveaxis(data[channel_measure, :, :], 0, -1)
+            image_measure.append(cur_image_measure)
 
-    for i in range(len(image)):
-        if image[i].ndim == 3:
-            if is_rgb:
-                image_gray = skimage.color.rgb2gray(image[i])
-                image_gray = skimage.util.img_as_ubyte(image_gray)
-                image[i] = image_gray
-        if scaling_factor != 1:
-            image[i] = image[i][::scaling_factor, ::scaling_factor]
+    if image_measure is None:
+        image_measure = [None]*len(image)
     
     # handle yaml options file
     default_options = {'diameter': diameter, 'flow_threshold': flow_threshold, 'cellprob_threshold': cellprob_threshold}
