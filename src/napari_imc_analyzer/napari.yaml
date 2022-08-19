@@ -3,7 +3,7 @@ display_name: napari IMCanalyzer
 contributions:
   commands:
     - id: napari-imc-analyzer.get_reader
-      python_name: napari_imc_analyzer._reader:napari_get_reader
+      python_name: napari_imc_analyzer._reader:napari_get_reader_mcd
       title: Open data with napari IMCanalyzer
     - id: napari-imc-analyzer.make_qwidget
       python_name: napari_imc_analyzer.mcd_widget:MCDWidget
