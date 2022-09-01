@@ -6,7 +6,7 @@ import magicgui.widgets
 from napari.layers import Image
 
 from .folder_list_widget import FolderList
-from .serial_analysis import run_cellpose, load_props, load_allprops
+from .imc_analysis import run_cellpose, load_props, load_allprops
 
 from pathlib import Path
 import skimage.io
