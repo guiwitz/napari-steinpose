@@ -67,13 +67,43 @@ def reader_function(path):
     # stack arrays into single array
     data = np.squeeze(np.stack(arrays))'''
 
-    with MCDFile(path) as f:
-        acquisition = f.slides[0].acquisitions[0]  # first acquisition of first slide
-        data = f.read_acquisition(acquisition)
-        labels = acquisition.channel_labels
+    data, labels, _ = read_mcd(path, 0)
 
     # optional kwargs for the corresponding viewer.add_* method
     add_kwargs = {'channel_axis': 0, 'name': labels}
 
     layer_type = "image"  # optional, default is "image"
-    return [(data, add_kwargs, layer_type)]
+    return (data, add_kwargs, layer_type)
+
+def read_mcd(path, acquisition_id=0):
+    """Read an mcd file and return the data, labels and number of acquisitions.
+
+    Parameters
+    ----------
+    path : str or list of str
+        Path to file, or list of paths.
+    acquisition_id : int
+        The acquisition id to read.
+
+    Returns
+    -------
+    data : numpy array
+        The data from the mcd file.
+    labels : list of str
+        The channel labels from the mcd file.
+    num_acquisitions : int
+        The number of acquisitions in the mcd file.
+    """
+
+    with MCDFile(path) as f:
+        num_acquisitions = len(f.slides[0].acquisitions)
+        acquisition = f.slides[0].acquisitions[acquisition_id]  # first acquisition of first slide
+        data = f.read_acquisition(acquisition)
+        labels = acquisition.channel_labels
+
+        import skimage
+        for i in range(len(data)):
+            p2, p98 = np.percentile(data[i], (2, 98))
+            data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
+
+        return data, labels, num_acquisitions

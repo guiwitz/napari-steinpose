@@ -18,6 +18,7 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg, NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
+from ._reader import read_mcd
 
 
 class MCDWidget(QWidget):
@@ -78,6 +79,11 @@ class MCDWidget(QWidget):
 
         self.file_list = FolderList(napari_viewer)
         self._segmentation_layout.addWidget(self.file_list)
+
+        self.slider_acquisition = QSpinBox()
+        self.slider_acquisition.setMinimum(0)
+        self.slider_acquisition.setMaximum(0)
+        self._segmentation_layout.addWidget(self.slider_acquisition)
 
         self.folder_group = VHGroup('Folder selection')
         self._segmentation_layout.addWidget(self.folder_group.gbox)
@@ -253,6 +259,7 @@ class MCDWidget(QWidget):
         self.btn_select_options_file.clicked.connect(self._on_click_select_options_file)
         self.btn_select_output_folder.clicked.connect(self._on_click_select_output_folder)
         self.file_list.currentItemChanged.connect(self._on_select_file)
+        self.slider_acquisition.valueChanged.connect(self._on_slider_acquisition_change)
         self.btn_run_on_current.clicked.connect(self._on_click_run_on_current)
         self.btn_run_on_folder.clicked.connect(self._on_click_run_on_folder)
         self.qcbox_model_choice.currentTextChanged.connect(self._on_change_modeltype)
@@ -326,10 +333,11 @@ class MCDWidget(QWidget):
         image_name = self.file_list.currentItem().text()
         image_path = self.file_list.folder_path.joinpath(image_name)
 
-        if self.check_no_rgb.isChecked():
-            self.viewer.open(image_path, plugin='napari-imc-analyzer')
-        else:
-            self.viewer.open(image_path, plugin='napari-imc-analyzer')
+        from napari_imc_analyzer._reader import reader_function
+        data, labels, num_acquisitions = read_mcd(image_path, self.slider_acquisition.value())
+        self.viewer.add_image(data, channel_axis=0, name=labels)
+        self.slider_acquisition.setMaximum(num_acquisitions-1)
+        #self.viewer.open(image_path, plugin='napari-imc-analyzer')
 
         if self.output_folder is not None:
             mask_path = Path(self.output_folder).joinpath(image_path.stem+'_mask.tif')
@@ -341,6 +349,10 @@ class MCDWidget(QWidget):
                     self.add_table_props(props)
 
         return True
+
+    def _on_slider_acquisition_change(self):
+
+        self.open_file()
 
     def _on_click_select_file_folder(self):
         """Interactively select folder to analyze"""
