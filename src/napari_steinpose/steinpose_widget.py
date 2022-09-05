@@ -28,8 +28,6 @@ class SteinposeWidget(QWidget):
         self.cellpose_model_path = None
         self.cellpose_model = None
         self.output_folder = None
-        self.props_table = None
-        self.allprops = None
         self.options_file_path = None
         self.num_acquisitions = 0
         self.proj = {'mean': np.mean, 'max': np.max, 'min': np.min, 'median': np.median}
@@ -530,8 +528,6 @@ class SteinposeWidget(QWidget):
         if self.check_run_steinbock.isChecked():
             self.run_steinbock_postproc()
         
-        self._on_click_load_summary()
-
     def get_file_list(self):
         
         file_list = [self.file_list.item(x).text() for x in range(self.file_list.count())]
