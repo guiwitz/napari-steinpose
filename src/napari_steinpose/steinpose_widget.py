@@ -332,9 +332,6 @@ class SteinposeWidget(QWidget):
             if mask_path.exists():
                 self.mask = skimage.io.imread(mask_path)
                 self.viewer.add_labels(self.mask, name='mask')
-                props = load_props(self.output_folder, image_name)
-                if props is not None:
-                    self.add_table_props(props)
             
             proj_path = Path(self.output_folder).joinpath('imgs_proj').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.value()}_proj.tiff')
             if proj_path.exists():
