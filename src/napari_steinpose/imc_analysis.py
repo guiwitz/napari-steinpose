@@ -2,8 +2,6 @@ from pathlib import Path
 import warnings
 import skimage.io
 import skimage.segmentation
-from skimage.measure import regionprops_table as sk_regionprops_table
-from napari_skimage_regionprops._regionprops import regionprops_table
 import pandas as pd
 import numpy as np
 import yaml
