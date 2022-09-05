@@ -17,7 +17,7 @@ In order to use this plugin, whe highly recommend to create a specific environme
 
 Then activate it and install the plugin:
     
-    conda activate serialcellpose
+    conda activate steinpose
     pip install git+https://github.com/guiwitz/napari-steinpose.git
 
 ### Potential issue with PyTorch
