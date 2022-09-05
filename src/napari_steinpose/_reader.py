@@ -6,7 +6,8 @@ implement multiple readers or even other plugin contributions. see:
 https://napari.org/stable/plugins/guides.html?#readers
 """
 import numpy as np
-from readimc import MCDFile, TXTFile
+from readimc import MCDFile
+import skimage
 
 
 def napari_get_reader_mcd(path):
@@ -67,7 +68,7 @@ def reader_function(path):
     # stack arrays into single array
     data = np.squeeze(np.stack(arrays))'''
 
-    data, labels, _ = read_mcd(path, 0)
+    data, labels, _, _ = read_mcd(path)
 
     # optional kwargs for the corresponding viewer.add_* method
     add_kwargs = {'channel_axis': 0, 'name': labels}
@@ -75,7 +76,7 @@ def reader_function(path):
     layer_type = "image"  # optional, default is "image"
     return (data, add_kwargs, layer_type)
 
-def read_mcd(path, acquisition_id=0):
+def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=None):
     """Read an mcd file and return the data, labels and number of acquisitions.
 
     Parameters
@@ -84,6 +85,10 @@ def read_mcd(path, acquisition_id=0):
         Path to file, or list of paths.
     acquisition_id : int
         The acquisition id to read.
+    rescale_percentile: bool
+        rescale the intensity
+    planes_to_load : array
+        1d array of planes to load
 
     Returns
     -------
@@ -100,10 +105,15 @@ def read_mcd(path, acquisition_id=0):
         acquisition = f.slides[0].acquisitions[acquisition_id]  # first acquisition of first slide
         data = f.read_acquisition(acquisition)
         labels = acquisition.channel_labels
+        names = acquisition.channel_names
 
-        import skimage
-        for i in range(len(data)):
-            p2, p98 = np.percentile(data[i], (2, 98))
-            data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
+        if planes_to_load is not None:
+            data = data[planes_to_load]
+            labels = np.array(labels)[planes_to_load]
 
-        return data, labels, num_acquisitions
+        if rescale_percentile is True:
+            for i in range(len(data)):
+                p2, p98 = np.percentile(data[i], (2, 98))
+                data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
+
+        return data, labels, num_acquisitions, names

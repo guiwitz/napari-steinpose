@@ -1,6 +1,6 @@
 import numpy as np
 
-from napari_imc_analyzer import napari_get_reader
+from napari_steinpose import napari_get_reader
 
 
 # tmp_path is a pytest fixture

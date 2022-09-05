@@ -1,11 +1,11 @@
-# napari-imc-analyzer
+# napari-steinpose
 
-[![License BSD-3](https://img.shields.io/pypi/l/napari-imc-analyzer.svg?color=green)](https://github.com/guiwitz/napari-imc-analyzer/raw/main/LICENSE)
-[![PyPI](https://img.shields.io/pypi/v/napari-imc-analyzer.svg?color=green)](https://pypi.org/project/napari-imc-analyzer)
-[![Python Version](https://img.shields.io/pypi/pyversions/napari-imc-analyzer.svg?color=green)](https://python.org)
-[![tests](https://github.com/guiwitz/napari-imc-analyzer/workflows/tests/badge.svg)](https://github.com/guiwitz/napari-imc-analyzer/actions)
-[![codecov](https://codecov.io/gh/guiwitz/napari-imc-analyzer/branch/main/graph/badge.svg)](https://codecov.io/gh/guiwitz/napari-imc-analyzer)
-[![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-imc-analyzer)](https://napari-hub.org/plugins/napari-imc-analyzer)
+[![License BSD-3](https://img.shields.io/pypi/l/napari-steinpose.svg?color=green)](https://github.com/guiwitz/napari-steinpose/raw/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/napari-steinpose.svg?color=green)](https://pypi.org/project/napari-steinpose)
+[![Python Version](https://img.shields.io/pypi/pyversions/napari-steinpose.svg?color=green)](https://python.org)
+[![tests](https://github.com/guiwitz/napari-steinpose/workflows/tests/badge.svg)](https://github.com/guiwitz/napari-steinpose/actions)
+[![codecov](https://codecov.io/gh/guiwitz/napari-steinpose/branch/main/graph/badge.svg)](https://codecov.io/gh/guiwitz/napari-steinpose)
+[![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-steinpose)](https://napari-hub.org/plugins/napari-steinpose)
 
 A plugin to segment and analyze IMC data
 
@@ -23,15 +23,15 @@ https://napari.org/stable/plugins/index.html
 
 ## Installation
 
-You can install `napari-imc-analyzer` via [pip]:
+You can install `napari-steinpose` via [pip]:
 
-    pip install napari-imc-analyzer
+    pip install napari-steinpose
 
 
 
 To install latest development version :
 
-    pip install git+https://github.com/guiwitz/napari-imc-analyzer.git
+    pip install git+https://github.com/guiwitz/napari-steinpose.git
 
 
 ## Contributing
@@ -42,7 +42,7 @@ the coverage at least stays the same before you submit a pull request.
 ## License
 
 Distributed under the terms of the [BSD-3] license,
-"napari-imc-analyzer" is free and open source software
+"napari-steinpose" is free and open source software
 
 ## Issues
 
@@ -59,7 +59,7 @@ If you encounter any problems, please [file an issue] along with a detailed desc
 [Mozilla Public License 2.0]: https://www.mozilla.org/media/MPL/2.0/index.txt
 [cookiecutter-napari-plugin]: https://github.com/napari/cookiecutter-napari-plugin
 
-[file an issue]: https://github.com/guiwitz/napari-imc-analyzer/issues
+[file an issue]: https://github.com/guiwitz/napari-steinpose/issues
 
 [napari]: https://github.com/napari/napari
 [tox]: https://tox.readthedocs.io/en/latest/

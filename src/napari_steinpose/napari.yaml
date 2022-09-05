@@ -1,0 +1,17 @@
+name: napari-steinpose
+display_name: napari Steinpose
+contributions:
+  commands:
+    - id: napari-steinpose.get_reader
+      python_name: napari_steinpose._reader:napari_get_reader_mcd
+      title: Open data with napari Steinopse
+    - id: napari-steinpose.make_qwidget
+      python_name: napari_steinpose.steinpose_widget:SteinposeWidget
+      title: Main widget
+  readers:
+    - command: napari-steinpose.get_reader
+      accepts_directories: false
+      filename_patterns: ['*.mcd']
+  widgets:
+    - command: napari-steinpose.make_qwidget
+      display_name: Steinpose Widget

@@ -1,6 +1,6 @@
 import numpy as np
 
-from napari_imc_analyzer import ExampleQWidget, example_magic_widget
+from napari_steinpose import ExampleQWidget, example_magic_widget
 
 
 # make_napari_viewer is a pytest fixture that returns a napari viewer object

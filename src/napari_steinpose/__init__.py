@@ -5,9 +5,9 @@ except ImportError:
     __version__ = "unknown"
 
 from ._reader import napari_get_reader_mcd
-from .mcd_widget import MCDWidget
+from .steinpose_widget import SteinposeWidget
 
 __all__ = (
     "napari_get_reader_mcd",
-    "MCDWidget",
+    "SteinposeWidget",
 )
