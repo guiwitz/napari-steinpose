@@ -482,12 +482,10 @@ class SteinposeWidget(QWidget):
         )
         self.mask = mask[0]
 
-        self.viewer.layers.events.disconnect(self._on_change_layers)
         self.viewer.layers.events.inserted.disconnect(self._on_change_layers)
 
         self.viewer.add_labels(self.mask, name='mask')
         
-        self.viewer.layers.events.connect(self._on_change_layers)
         self.viewer.layers.events.inserted.connect(self._on_change_layers)
 
     def _on_click_run_on_folder(self):
