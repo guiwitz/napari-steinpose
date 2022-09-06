@@ -1,7 +1,8 @@
 import numpy as np
 from readimc import MCDFile
 import skimage
-
+from aicsimageio import AICSImage
+from pathlib import Path
 
 def napari_get_reader_mcd(path):
     """A basic implementation of a Reader contribution.
@@ -74,8 +75,8 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
 
     Parameters
     ----------
-    path : str or list of str
-        Path to file, or list of paths.
+    path : str
+        Path to file
     acquisition_id : int
         The acquisition id to read.
     rescale_percentile: bool
@@ -91,22 +92,35 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
         The channel labels from the mcd file.
     num_acquisitions : int
         The number of acquisitions in the mcd file.
+    names : list of str
+        The channel names from the mcd file.
     """
 
-    with MCDFile(path) as f:
-        num_acquisitions = len(f.slides[0].acquisitions)
-        acquisition = f.slides[0].acquisitions[acquisition_id]  # first acquisition of first slide
-        data = f.read_acquisition(acquisition)
+    path = Path(path)
+    if path.suffix == ".mcd":
+        with MCDFile(path) as f:
+            num_acquisitions = len(f.slides[0].acquisitions)
+            acquisition = f.slides[0].acquisitions[acquisition_id]  # first acquisition of first slide
+            data = f.read_acquisition(acquisition)
         labels = acquisition.channel_labels
         names = acquisition.channel_names
+    elif path.suffix == ".tiff":
+        im_aics = AICSImage(path)
+        data = im_aics.get_image_data('CYX')
+        names_labels = im_aics.channel_names
+        names = [x.split('/')[0] for x in names_labels]
+        labels = [x.split('/')[1] for x in names_labels]
+        num_acquisitions = 1
+    else:
+        raise ValueError("File is not an mcd file nor a ome tiff file.")
 
-        if planes_to_load is not None:
-            data = data[planes_to_load]
-            labels = np.array(labels)[planes_to_load]
+    if planes_to_load is not None:
+        data = data[planes_to_load]
+        labels = np.array(labels)[planes_to_load]
 
-        if rescale_percentile is True:
-            for i in range(len(data)):
-                p2, p98 = np.percentile(data[i], (2, 98))
-                data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
+    if rescale_percentile is True:
+        for i in range(len(data)):
+            p2, p98 = np.percentile(data[i], (2, 98))
+            data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
 
-        return data, labels, num_acquisitions, names
+    return data, labels, num_acquisitions, names
