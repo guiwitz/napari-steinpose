@@ -7,7 +7,7 @@
 [![codecov](https://codecov.io/gh/guiwitz/napari-steinpose/branch/main/graph/badge.svg)](https://codecov.io/gh/guiwitz/napari-steinpose)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-steinpose)](https://napari-hub.org/plugins/napari-steinpose)
 
-This napari plugin allows to segment and extract information from Imaging Mass Cytometry data by combining the [cellpose](http://www.cellpose.org/) and [steinbock]https://bodenmillergroup.github.io/steinbock/v0.14.2/ tools.
+This napari plugin allows to segment and extract information from Imaging Mass Cytometry data by combining the [cellpose](http://www.cellpose.org/) and [steinbock](https://bodenmillergroup.github.io/steinbock/v0.14.2/) tools.
 
 ## Installation
 
