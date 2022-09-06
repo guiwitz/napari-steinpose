@@ -465,7 +465,7 @@ class SteinposeWidget(QWidget):
         curr_proj = self.proj[self.qcbox_projection_method.currentText()]
 
         # run cellpose
-        self.mask = run_cellpose(
+        mask = run_cellpose(
             image_path=image_path,
             cellpose_model=self.cellpose_model,
             output_path=self.output_folder,
@@ -476,12 +476,11 @@ class SteinposeWidget(QWidget):
             clear_border=self.check_clear_border.isChecked(),
             channel_to_segment=channel_to_segment,
             channel_helper=channel_helper,
-            channel_measure=None,
-            channel_measure_names=None,
             options_file=self.options_file_path,
             proj_fun=curr_proj,
             label_expand=self.spinbox_expand.value()
         )
+        self.mask = mask[0]
 
         self.viewer.layers.events.disconnect(self._on_change_layers)
         self.viewer.layers.events.inserted.disconnect(self._on_change_layers)
@@ -518,8 +517,6 @@ class SteinposeWidget(QWidget):
                     clear_border=self.check_clear_border.isChecked(),
                     channel_to_segment=channel_to_segment,
                     channel_helper=channel_helper,
-                    channel_measure=None,
-                    channel_measure_names=None,
                     options_file=self.options_file_path,
                     proj_fun=curr_proj,
                     label_expand=self.spinbox_expand.value()
