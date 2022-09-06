@@ -15,6 +15,7 @@ from steinbock.measurement.intensities import try_measure_intensities_from_disk
 from steinbock.measurement.regionprops import try_measure_regionprops_from_disk
 from steinbock.measurement.neighbors import try_measure_neighbors_from_disk
 from steinbock import io
+from steinbock.preprocessing.imc import _clean_panel
 
 _intensity_aggregations = {
     "sum": IntensityAggregation.SUM,
@@ -36,7 +37,6 @@ _neighborhood_types = {
 def run_cellpose(image_path, cellpose_model, output_path, acquisition=0,
                  diameter=None, flow_threshold=0.4, cellprob_threshold=0.0,
                  clear_border=True, channel_to_segment=None, channel_helper=None,
-                 channel_measure=None, channel_measure_names=None,
                  options_file=None, proj_fun=np.max, label_expand=0):
     """Run cellpose on image.
     
@@ -61,10 +61,6 @@ def run_cellpose(image_path, cellpose_model, output_path, acquisition=0,
         index of channel to segment, if image is multi-channel
     channel_helper : int, default 0
         index of helper nucleus channel for models using both cell and nucleus channels
-    channel_measure: int or list of int, default None
-        index of channel(s) in which to measure intensity
-    channel_measure_names: list of str, default None
-        names of channel(s) in which to measure intensity
     options_file: str or Path, default None
         path to yaml options file for cellpose
     proj_fun: function
@@ -185,8 +181,9 @@ def create_panel_file(path, export_path):
     """
 
     data, labels, num_acquisitions, names = read_mcd(path, acquisition_id=0, rescale_percentile=False)
-    #panel = pd.DataFrame({'channel': names, 'name': labels})
-    panel = pd.DataFrame({'channel': names, 'name': names})
+    panel = pd.DataFrame({'channel': labels, 'name': names})
+    #panel = pd.DataFrame({'channel': names, 'name': names})
+    panel = _clean_panel(panel)
     panel.to_csv(export_path.joinpath('panel.csv'), index=False)
 
 
