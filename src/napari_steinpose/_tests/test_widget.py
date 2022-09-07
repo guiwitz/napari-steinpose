@@ -73,7 +73,7 @@ def test_segmentation(make_napari_viewer):
 
     file_folder = Path('src/napari_steinpose/_tests/data/')
     widget.file_list.update_from_path(file_folder)    
-    widget.file_list.setCurrentRow(0)
+    widget.file_list.setCurrentRow(1)
 
     cell_ch = ['ICSK1', 'ICSK2', 'ICSK3']
     nucl_ch = ['DNA1','DNA2']

@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from qtpy.QtWidgets import QListWidget
 from qtpy.QtCore import Qt
+from natsort import natsorted
 
 
 class FolderList(QListWidget):
@@ -47,7 +48,8 @@ class FolderList(QListWidget):
 
         self.clear()
         self.folder_path = path
-        files = os.listdir(self.folder_path)  
+        files = os.listdir(self.folder_path)
+        files = natsorted(files)
         for f in files:
             if (f[0] != '.') and (self.folder_path.joinpath(f).is_file()) and (Path(f).suffix in ['.mcd', '.tiff']):
                 self.addItem(f)
