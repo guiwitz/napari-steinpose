@@ -160,7 +160,7 @@ def export_for_steinbock(path, export_path, hpf=None):
     
     """
 
-    data, labels, num_acquisitions, names = read_mcd(path, acquisition_id=0, rescale_percentile=False)
+    data, _, num_acquisitions, _ = read_mcd(path, acquisition_id=0, rescale_percentile=False)
     
     p = Path(export_path).joinpath('img')
     p.mkdir(parents=True, exist_ok=True)
@@ -183,8 +183,8 @@ def create_panel_file(mcd_path, export_path):
     
     """
 
-    data, labels, num_acquisitions, names = read_mcd(mcd_path, acquisition_id=0, rescale_percentile=False)
-    panel = pd.DataFrame({'channel': labels, 'name': names})
+    data, channels, num_acquisitions, names = read_mcd(mcd_path, acquisition_id=0, rescale_percentile=False)
+    panel = pd.DataFrame({'channel': channels, 'name': names})
     panel = _clean_panel(panel)
     panel.to_csv(export_path.joinpath('panel.csv'), index=False)
 
