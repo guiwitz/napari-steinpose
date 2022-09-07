@@ -328,8 +328,7 @@ class SteinposeWidget(QWidget):
         image_name = self.file_list.currentItem().text()
         image_path = self.file_list.folder_path.joinpath(image_name)
 
-        from napari_steinpose._reader import reader_function
-        data, labels, self.num_acquisitions, names = read_mcd(image_path, self.slider_acquisition.value())
+        data, _, self.num_acquisitions, names = read_mcd(image_path, self.slider_acquisition.value())
         self.viewer.add_image(data, channel_axis=0, name=names)
         self.slider_acquisition.setMaximum(self.num_acquisitions-1)
 
