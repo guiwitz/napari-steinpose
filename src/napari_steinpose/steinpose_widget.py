@@ -5,7 +5,7 @@ from qtpy.QtCore import Qt
 from napari.layers import Image
 
 from .folder_list_widget import FolderList
-from .imc_analysis import (run_cellpose, export_for_steinbock)
+from .imc_analysis import (run_cellpose, export_for_steinbock, create_panel_file)
 from ._reader import read_mcd
 
 from pathlib import Path
@@ -367,12 +367,7 @@ class SteinposeWidget(QWidget):
         if self.output_folder is None:
             self._on_click_select_output_folder()
         
-        file_list = [self.file_list.item(x).text() for x in range(self.file_list.count())]
-        file_list = [f for f in file_list if f[0] != '.']
-        file_list = [self.file_list.folder_path.joinpath(x) for x in file_list]
-        file_list = [f for f in file_list if f.is_file()]
-
-        for f in file_list:
+        for f in self.get_file_list():
             export_for_steinbock(f, self.output_folder)
 
     def _on_slider_acquisition_change(self):
@@ -536,7 +531,11 @@ class SteinposeWidget(QWidget):
         """Run steinbock postprocessing on current folder"""
 
         file_list = self.get_file_list()
-        export_for_steinbock(file_list[0], self.output_folder)
+        create_panel_file(mcd_path=file_list[0], output_path=self.output_folder)
+        
+        for f in file_list:
+            export_for_steinbock(f, self.output_folder)
+
         if self.check_intensities.isChecked():
             measure_intensities_steinbock(self.output_folder, statistic=self.qcbox_intensity_stat.currentText())
         if self.check_regionprops.isChecked():

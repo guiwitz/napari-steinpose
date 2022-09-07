@@ -146,7 +146,7 @@ def create_composite_proj(mcd_path, acquisition, rescale_percentile, planes_to_l
     return cur_image
 
 def export_for_steinbock(path, export_path):
-    """Convert mcd files to tiff files for Steinbock and create panels.csv file
+    """Convert mcd files to tiff files for Steinbock
     
     Parameters
     ----------
@@ -156,8 +156,6 @@ def export_for_steinbock(path, export_path):
         path to folder where to export
     
     """
-
-    create_panel_file(path=path, export_path=export_path)
 
     data, labels, num_acquisitions, names = read_mcd(path, acquisition_id=0, rescale_percentile=False)
     
@@ -168,21 +166,20 @@ def export_for_steinbock(path, export_path):
         data, _, _, _ = read_mcd(path, acquisition_id=i, rescale_percentile=False)
         OmeTiffWriter.save(data, p.joinpath(f'{path.stem}_acq_{i}.tiff'), dim_order="CYX")
 
-def create_panel_file(path, export_path):
+def create_panel_file(mcd_path, export_path):
     """Create panel file for Steinbock
 
     Parameters
     ----------
-    path : str or Path
+    mcd_path : str or Path
         path to mcd file
     export_path : str or Path
         path to folder where to export
     
     """
 
-    data, labels, num_acquisitions, names = read_mcd(path, acquisition_id=0, rescale_percentile=False)
+    data, labels, num_acquisitions, names = read_mcd(mcd_path, acquisition_id=0, rescale_percentile=False)
     panel = pd.DataFrame({'channel': labels, 'name': names})
-    #panel = pd.DataFrame({'channel': names, 'name': names})
     panel = _clean_panel(panel)
     panel.to_csv(export_path.joinpath('panel.csv'), index=False)
 
