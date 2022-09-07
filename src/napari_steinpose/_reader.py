@@ -104,13 +104,14 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
             data = f.read_acquisition(acquisition)
         labels = acquisition.channel_labels
         names = acquisition.channel_names
+    
     elif path.suffix == ".tiff":
         im_aics = AICSImage(path)
-        data = im_aics.get_image_data('CYX')
+        data = im_aics.get_image_data(dimension_order_out='CYX', T=acquisition_id)
         names_labels = im_aics.channel_names
         names = [x.split('/')[0] for x in names_labels]
         labels = [x.split('/')[1] for x in names_labels]
-        num_acquisitions = 1
+        num_acquisitions = im_aics.dims.T
     else:
         raise ValueError("File is not an mcd file nor a ome tiff file.")
 
