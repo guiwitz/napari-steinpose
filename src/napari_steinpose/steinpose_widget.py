@@ -5,7 +5,8 @@ from qtpy.QtCore import Qt
 from napari.layers import Image
 
 from .folder_list_widget import FolderList
-from .imc_analysis import (run_cellpose, export_for_steinbock, create_panel_file)
+from .imc_analysis import (run_cellpose, export_for_steinbock, create_panel_file,
+create_images_file)
 from ._reader import read_mcd
 
 from pathlib import Path
@@ -174,10 +175,17 @@ class SteinposeWidget(QWidget):
         self.spinbox_expand.setMaximum(20)
         self.options_group.glayout.addWidget(self.spinbox_expand, 6, 1, 1, 1)
 
+        self.check_hpf = QCheckBox('Hot pixel filter')
+        self.options_group.glayout.addWidget(self.check_hpf, 7, 0, 1, 1)
+        self.spinbox_hpf = QSpinBox()
+        self.spinbox_hpf.setValue(0)
+        self.spinbox_hpf.setMaximum(1000)
+        self.options_group.glayout.addWidget(self.spinbox_hpf, 7, 1, 1, 1)
+
         self.btn_select_options_file = QPushButton("Select options yaml file")
         self.btn_select_options_file.setToolTip(("Select a yaml file containing special options for "
             "the cellpose model eval segmentation function"))
-        self.options_group.glayout.addWidget(self.btn_select_options_file, 7, 0, 1, 1)
+        self.options_group.glayout.addWidget(self.btn_select_options_file, 8, 0, 1, 1)
 
         self.config_group = VHGroup('Configuration', orientation='G')
         self._options_tab_layout.addWidget(self.config_group.gbox)
@@ -366,9 +374,12 @@ class SteinposeWidget(QWidget):
         
         if self.output_folder is None:
             self._on_click_select_output_folder()
-        
-        for f in self.get_file_list():
-            export_for_steinbock(f, self.output_folder)
+
+        file_list = self.get_file_list()
+        create_panel_file(mcd_path=file_list[0], export_path=self.output_folder)
+        create_images_file(file_list_mcd=file_list, export_path=self.output_folder)
+        for f in file_list:
+            export_for_steinbock(f, self.output_folder, hpf=(self.spinbox_hpf.value() if self.check_hpf.isChecked() else None))
 
     def _on_slider_acquisition_change(self):
 
@@ -531,10 +542,11 @@ class SteinposeWidget(QWidget):
         """Run steinbock postprocessing on current folder"""
 
         file_list = self.get_file_list()
-        create_panel_file(mcd_path=file_list[0], output_path=self.output_folder)
+        create_panel_file(mcd_path=file_list[0], export_path=self.output_folder)
+        create_images_file(file_list_mcd=file_list, export_path=self.output_folder)
         
         for f in file_list:
-            export_for_steinbock(f, self.output_folder)
+            export_for_steinbock(f, self.output_folder, hpf=(self.spinbox_hpf.value() if self.check_hpf.isChecked() else None))
 
         if self.check_intensities.isChecked():
             measure_intensities_steinbock(self.output_folder, statistic=self.qcbox_intensity_stat.currentText())

@@ -8,6 +8,7 @@ import yaml
 from readimc import MCDFile
 from ._reader import read_mcd
 from aicsimageio.writers import OmeTiffWriter
+from aicsimageio import AICSImage
 
 from steinbock.measurement.intensities import IntensityAggregation
 from steinbock.measurement.neighbors import NeighborhoodType
@@ -15,7 +16,7 @@ from steinbock.measurement.intensities import try_measure_intensities_from_disk
 from steinbock.measurement.regionprops import try_measure_regionprops_from_disk
 from steinbock.measurement.neighbors import try_measure_neighbors_from_disk
 from steinbock import io
-from steinbock.preprocessing.imc import _clean_panel
+from steinbock.preprocessing.imc import _clean_panel, filter_hot_pixels
 
 _intensity_aggregations = {
     "sum": IntensityAggregation.SUM,
@@ -145,7 +146,7 @@ def create_composite_proj(mcd_path, acquisition, rescale_percentile, planes_to_l
 
     return cur_image
 
-def export_for_steinbock(path, export_path):
+def export_for_steinbock(path, export_path, hpf=None):
     """Convert mcd files to tiff files for Steinbock
     
     Parameters
@@ -154,6 +155,8 @@ def export_for_steinbock(path, export_path):
         path to mcd file
     export_path : str or Path
         path to folder where to export
+    hpf : int, default None
+        hot pixel filtering
     
     """
 
@@ -164,6 +167,8 @@ def export_for_steinbock(path, export_path):
 
     for i in range(num_acquisitions):
         data, _, _, _ = read_mcd(path, acquisition_id=i, rescale_percentile=False)
+        if hpf is not None:
+            data = filter_hot_pixels(img=data, thres=hpf)
         OmeTiffWriter.save(data, p.joinpath(f'{path.stem}_acq_{i}.tiff'), dim_order="CYX")
 
 def create_panel_file(mcd_path, export_path):
@@ -182,6 +187,71 @@ def create_panel_file(mcd_path, export_path):
     panel = pd.DataFrame({'channel': labels, 'name': names})
     panel = _clean_panel(panel)
     panel.to_csv(export_path.joinpath('panel.csv'), index=False)
+
+
+def create_images_file(file_list_mcd, export_path):
+
+    image_info_data = []
+
+    for img_file in file_list_mcd:
+        if img_file.suffix == '.mcd':
+            with MCDFile(img_file) as f:
+                num_acquisitions = len(f.slides[0].acquisitions)
+                
+                for i in range(num_acquisitions):
+                    acquisition = f.slides[0].acquisitions[i]  # first acquisition of first slide
+                    
+                    tiff_path = export_path.joinpath('img').joinpath(f'{img_file.stem}_acq_{i}.tiff')
+            
+                    image_info_row = {
+                        "image": tiff_path.name,
+                        "width_px": acquisition.width_px,
+                        "height_px": acquisition.height_px,
+                        "num_channels": acquisition.num_channels,
+                    }
+                    image_info_row.update(
+                        {
+                            "acquisition_id": acquisition.id,
+                            "acquisition_description": acquisition.description,
+                            "acquisition_start_x_um": (acquisition.roi_points_um[0][0]),
+                            "acquisition_start_y_um": (acquisition.roi_points_um[0][1]),
+                            "acquisition_end_x_um": (acquisition.roi_points_um[2][0]),
+                            "acquisition_end_y_um": (acquisition.roi_points_um[2][1]),
+                            "acquisition_width_um": acquisition.width_um,
+                            "acquisition_height_um": acquisition.height_um,
+                        }
+                    )
+                    image_info_data.append(image_info_row)
+
+        elif img_file.suffix == '.tiff':
+            im_aics = AICSImage(img_file)
+                
+            for i in range(im_aics.dims.T):
+
+                tiff_path = export_path.joinpath('img').joinpath(f'{img_file.stem}_acq_{i}.tiff')
+
+                image_info_row = {
+                            "image": tiff_path.name,
+                            "width_px": im_aics.dims.X,
+                            "height_px": im_aics.dims.Y,
+                            "num_channels": im_aics.dims.C,
+                        }
+                image_info_row.update(
+                        {
+                            "acquisition_id": i,
+                            "acquisition_description": 'tiff file',
+                            "acquisition_start_x_um": 0,
+                            "acquisition_start_y_um": 0,
+                            "acquisition_end_x_um": im_aics.dims.X,
+                            "acquisition_end_y_um": im_aics.dims.Y,
+                            "acquisition_width_um": im_aics.dims.X,
+                            "acquisition_height_um": im_aics.dims.Y,
+                        }
+                    )
+                image_info_data.append(image_info_row)
+
+    image_info = pd.DataFrame(data=image_info_data)
+    image_info.to_csv(export_path.joinpath('images.csv'), index=False)
 
 
 def measure_intensities_steinbock(output_folder, statistic='mean'):
