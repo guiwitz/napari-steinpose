@@ -1,7 +1,7 @@
 import numpy as np
 from pathlib import Path
 from napari_steinpose import SteinposeWidget
-
+import pytest
 
 # make_napari_viewer is a pytest fixture that returns a napari viewer object
 # capsys is a pytest fixture that captures stdout and stderr output streams
@@ -66,13 +66,14 @@ def test_create_merged_images(make_napari_viewer):
     assert viewer.layers[-1].name == 'merged_nuclei'
     assert viewer.layers[-2].name == 'merged_cell'
 
+@pytest.mark.order(1)
 def test_segmentation(make_napari_viewer):
 
     viewer = make_napari_viewer()
     widget = SteinposeWidget(viewer)
 
     file_folder = Path('src/napari_steinpose/_tests/data/')
-    widget.file_list.update_from_path(file_folder)    
+    widget.file_list.update_from_path(file_folder)
     widget.file_list.setCurrentRow(1)
 
     cell_ch = ['ICSK1', 'ICSK2', 'ICSK3']
@@ -95,3 +96,41 @@ def test_segmentation(make_napari_viewer):
     assert viewer.layers[-1].name == 'mask'
     assert viewer.layers['mask'].data.max() == 17
 
+    # run on folder
+    output_path = file_folder.joinpath('output')
+    output_path.mkdir(exist_ok=True)
+
+    widget.output_folder = output_path
+
+    widget._on_click_run_on_folder()
+
+    assert output_path.joinpath('imgs_proj').exists(), "Missing projection images"
+    assert output_path.joinpath('masks').exists(), "Missing segmentation images"
+
+    assert len(list(output_path.joinpath('imgs_proj').glob('*.tiff'))) == 4, "Wrong number of projection images"
+    assert len(list(output_path.joinpath('masks').glob('*.tiff'))) == 4, "Wrong number of segmentation images"
+
+@pytest.mark.order(2)
+def test_steinbock(make_napari_viewer):
+
+    viewer = make_napari_viewer()
+    widget = SteinposeWidget(viewer)
+
+    file_folder = Path('src/napari_steinpose/_tests/data/')
+    widget.file_list.update_from_path(file_folder)
+
+    output_path = file_folder.joinpath('output')
+    widget.output_folder = output_path
+
+    widget.run_steinbock_postproc()
+
+    assert output_path.joinpath('intensities').exists(), "Missing intensity folder"
+    assert output_path.joinpath('regionprops').exists(), "Missing regionprops folder"
+    assert output_path.joinpath('neighbors').exists(), "Missing neihgbors folder"
+
+    assert len(list(output_path.joinpath('intensities').glob('*.csv'))) == 4, "Wrong number of intensity files"
+    assert len(list(output_path.joinpath('regionprops').glob('*.csv'))) == 4, "Wrong number of intensity files"
+    assert len(list(output_path.joinpath('neighbors').glob('*.csv'))) == 4, "Wrong number of intensity files"
+
+    assert output_path.joinpath('panel.csv').exists(), "Missing panel.csv file"
+    assert output_path.joinpath('images.csv').exists(), "Missing images.csv file"
