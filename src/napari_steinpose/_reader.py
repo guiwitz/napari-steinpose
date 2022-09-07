@@ -62,10 +62,10 @@ def reader_function(path):
     # stack arrays into single array
     data = np.squeeze(np.stack(arrays))'''
 
-    data, labels, _, _ = read_mcd(path)
+    data, labels, _, names = read_mcd(path)
 
     # optional kwargs for the corresponding viewer.add_* method
-    add_kwargs = {'channel_axis': 0, 'name': labels}
+    add_kwargs = {'channel_axis': 0, 'name': names}
 
     layer_type = "image"  # optional, default is "image"
     return (data, add_kwargs, layer_type)
@@ -88,7 +88,7 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
     -------
     data : numpy array
         The data from the mcd file.
-    labels : list of str
+    channels : list of str
         The channel labels from the mcd file.
     num_acquisitions : int
         The number of acquisitions in the mcd file.
@@ -102,26 +102,27 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
             num_acquisitions = len(f.slides[0].acquisitions)
             acquisition = f.slides[0].acquisitions[acquisition_id]  # first acquisition of first slide
             data = f.read_acquisition(acquisition)
-        labels = acquisition.channel_labels
-        names = acquisition.channel_names
+        names = acquisition.channel_labels
+        channels = acquisition.channel_names
     
     elif path.suffix == ".tiff":
         im_aics = AICSImage(path)
         data = im_aics.get_image_data(dimension_order_out='CYX', T=acquisition_id)
         names_labels = im_aics.channel_names
-        names = [x.split('/')[0] for x in names_labels]
-        labels = [x.split('/')[1] for x in names_labels]
+        channels = [x.split('/')[0] for x in names_labels]
+        names = [x.split('/')[1] for x in names_labels]
         num_acquisitions = im_aics.dims.T
     else:
         raise ValueError("File is not an mcd file nor a ome tiff file.")
 
     if planes_to_load is not None:
         data = data[planes_to_load]
-        labels = np.array(labels)[planes_to_load]
+        channels = np.array(channels)[planes_to_load]
+        names = np.array(names)[planes_to_load]
 
     if rescale_percentile is True:
         for i in range(len(data)):
             p2, p98 = np.percentile(data[i], (2, 98))
             data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
 
-    return data, labels, num_acquisitions, names
+    return data, channels, num_acquisitions, names
