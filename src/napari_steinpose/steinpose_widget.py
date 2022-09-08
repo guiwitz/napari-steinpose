@@ -337,10 +337,6 @@ class SteinposeWidget(QWidget):
         self.slider_acquisition.setMaximum(self.num_acquisitions-1)
 
         if self.output_folder is not None:
-            mask_path = Path(self.output_folder).joinpath('masks').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.value()}.tiff')
-            if mask_path.exists():
-                self.mask = skimage.io.imread(mask_path)
-                self.viewer.add_labels(self.mask, name='mask')
             
             proj_path = Path(self.output_folder).joinpath('imgs_proj').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.value()}_proj.tiff')
             if proj_path.exists():
@@ -362,8 +358,13 @@ class SteinposeWidget(QWidget):
                         name='merged_nuclei',
                         colormap='cyan',
                         blending='additive')
-
+            
             self._on_show_only_merge()
+
+            mask_path = Path(self.output_folder).joinpath('masks').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.value()}.tiff')
+            if mask_path.exists():
+                self.mask = skimage.io.imread(mask_path)
+                self.viewer.add_labels(self.mask, name='mask')
 
         return True
 
