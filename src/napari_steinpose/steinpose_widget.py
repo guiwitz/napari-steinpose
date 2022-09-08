@@ -88,13 +88,23 @@ class SteinposeWidget(QWidget):
         self.btn_select_output_folder = QPushButton("Select output folder")
         self.folder_group.glayout.addWidget(self.btn_select_output_folder)
 
+        self.cellpose_group = VHGroup('cellpose', orientation='G')
+        self._segmentation_layout.addWidget(self.cellpose_group.gbox)
+
         self.qcbox_model_choice = QComboBox(visible=True)
         self.qcbox_model_choice.addItems([
             'custom', 'cyto', 'cyto2', 'nuclei', 'tissuenet', 'CP'])
-        self.folder_group.glayout.addWidget(self.qcbox_model_choice)
+        self.cellpose_group.glayout.addWidget(self.qcbox_model_choice, 0, 0, 1, 2)
 
         self.btn_select_cellpose_model = QPushButton("Select custom cellpose model file")
-        self.folder_group.glayout.addWidget(self.btn_select_cellpose_model)
+        self.cellpose_group.glayout.addWidget(self.btn_select_cellpose_model, 1, 0, 1, 2)
+
+        self.diameter_label = QLabel("Diameter", visible=False)
+        self.cellpose_group.glayout.addWidget(self.diameter_label, 2, 0, 1, 1)
+        self.spinbox_diameter = QSpinBox(visible=False)
+        self.spinbox_diameter.setValue(30)
+        self.spinbox_diameter.setMaximum(1000)
+        self.cellpose_group.glayout.addWidget(self.spinbox_diameter, 2, 1, 1, 1)
 
         self.run_group = VHGroup('Run analysis', orientation='G')
         self._segmentation_layout.addWidget(self.run_group.gbox)
@@ -111,35 +121,28 @@ class SteinposeWidget(QWidget):
         self.check_run_steinbock = QCheckBox('Run Steinbock post-processing')
         self.run_group.glayout.addWidget(self.check_run_steinbock, 2, 1, 1, 1)
 
-        self.mainoptions_group = VHGroup('Main options', orientation='G')
-        self._segmentation_layout.addWidget(self.mainoptions_group.gbox)
-
-        self.diameter_label = QLabel("Diameter", visible=False)
-        self.mainoptions_group.glayout.addWidget(self.diameter_label, 0, 0, 1, 1)
-        self.spinbox_diameter = QSpinBox(visible=False)
-        self.spinbox_diameter.setValue(30)
-        self.spinbox_diameter.setMaximum(1000)
-        self.mainoptions_group.glayout.addWidget(self.spinbox_diameter, 0, 1, 1, 1)
-
         #/////// Channels tab /////////
-        self.channel_merge_group = VHGroup('Channels to merge', orientation='G')
+        self.channel_merge_group = VHGroup('Merging', orientation='G')
         self._channels_tab_layout.addWidget(self.channel_merge_group.gbox)
         
-        self.channel_merge_group.glayout.addWidget(QLabel('Channels for cell'), 0, 0, 1, 1)
+        self.channel_merge_group.glayout.addWidget(QLabel('Channels for main objects'), 0, 0, 1, 2)
         self.qlist_merge_cell = QListWidget()
         self.qlist_merge_cell.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.channel_merge_group.glayout.addWidget(self.qlist_merge_cell, 0,1,1,1)
+        self.channel_merge_group.glayout.addWidget(self.qlist_merge_cell, 1,0,1,2)
 
-        self.channel_merge_group.glayout.addWidget(QLabel('Channels for nuclei'), 1, 0, 1, 1)
+        self.channel_merge_group.glayout.addWidget(QLabel('Channels for helpher objects'), 2, 0, 1, 2)
         self.qlist_merge_nuclei = QListWidget()
         self.qlist_merge_nuclei.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.channel_merge_group.glayout.addWidget(self.qlist_merge_nuclei, 1,1,1,1)
+        self.channel_merge_group.glayout.addWidget(self.qlist_merge_nuclei, 3,0,1,2)
 
         self.qcbox_projection_method = QComboBox()
         self.qcbox_projection_method.addItems(['max', 'median', 'mean', 'min'])
         self.qcbox_projection_method.setCurrentIndex(0)
-        self.channel_merge_group.glayout.addWidget(QLabel('Projection type'), 2, 0, 1, 1)
-        self.channel_merge_group.glayout.addWidget(self.qcbox_projection_method, 2,1,1,1)
+        self.channel_merge_group.glayout.addWidget(QLabel('Projection type'), 4, 0, 1, 1)
+        self.channel_merge_group.glayout.addWidget(self.qcbox_projection_method, 4,1,1,1)
+
+        self.button_show_merge = QPushButton('Show only merged channels')
+        self.channel_merge_group.glayout.addWidget(self.button_show_merge, 5, 0, 1, 2)
 
         #/////// Options tab /////////
         self._options_tab_layout.setAlignment(Qt.AlignTop)
@@ -175,17 +178,10 @@ class SteinposeWidget(QWidget):
         self.spinbox_expand.setMaximum(20)
         self.options_group.glayout.addWidget(self.spinbox_expand, 6, 1, 1, 1)
 
-        self.check_hpf = QCheckBox('Hot pixel filter')
-        self.options_group.glayout.addWidget(self.check_hpf, 7, 0, 1, 1)
-        self.spinbox_hpf = QSpinBox()
-        self.spinbox_hpf.setValue(0)
-        self.spinbox_hpf.setMaximum(1000)
-        self.options_group.glayout.addWidget(self.spinbox_hpf, 7, 1, 1, 1)
-
         self.btn_select_options_file = QPushButton("Select options yaml file")
         self.btn_select_options_file.setToolTip(("Select a yaml file containing special options for "
             "the cellpose model eval segmentation function"))
-        self.options_group.glayout.addWidget(self.btn_select_options_file, 8, 0, 1, 1)
+        self.options_group.glayout.addWidget(self.btn_select_options_file, 7, 0, 1, 1)
 
         self.config_group = VHGroup('Configuration', orientation='G')
         self._options_tab_layout.addWidget(self.config_group.gbox)
@@ -203,8 +199,15 @@ class SteinposeWidget(QWidget):
         self.btn_run_steinbock_postproc = QPushButton("Run Steinbock postproc")
         self._export_tab_layout.addWidget(self.btn_run_steinbock_postproc, 1, 0, 1, 2)
 
+        self.check_hpf = QCheckBox('Hot pixel filter')
+        self._export_tab_layout.addWidget(self.check_hpf, 2, 0, 1, 1)
+        self.spinbox_hpf = QSpinBox()
+        self.spinbox_hpf.setValue(0)
+        self.spinbox_hpf.setMaximum(1000)
+        self._export_tab_layout.addWidget(self.spinbox_hpf, 2, 1, 1, 1)
+
         self.intensity_group = VHGroup('Intensity', orientation='G')
-        self._export_tab_layout.addWidget(self.intensity_group.gbox, 2, 0, 1, 2)
+        self._export_tab_layout.addWidget(self.intensity_group.gbox, 3, 0, 1, 2)
         self.check_intensities = QCheckBox("Measure intensities")
         self.check_intensities.setChecked(True)
         self.intensity_group.glayout.addWidget(self.check_intensities, 0, 0, 1, 1)
@@ -216,13 +219,13 @@ class SteinposeWidget(QWidget):
         self.intensity_group.glayout.addWidget(self.qcbox_intensity_stat, 1, 1, 1, 1)
 
         self.regions_group = VHGroup('Regions', orientation='G')
-        self._export_tab_layout.addWidget(self.regions_group.gbox, 3, 0, 1, 2)
+        self._export_tab_layout.addWidget(self.regions_group.gbox, 4, 0, 1, 2)
         self.check_regionprops = QCheckBox("Measure regions")
         self.check_regionprops.setChecked(True)
         self.regions_group.glayout.addWidget(self.check_regionprops, 0, 0, 1, 1)
 
         self.neighbours_group = VHGroup('Neighbourhood', orientation='G')
-        self._export_tab_layout.addWidget(self.neighbours_group.gbox, 4, 0, 1, 2)
+        self._export_tab_layout.addWidget(self.neighbours_group.gbox, 5, 0, 1, 2)
         self.check_neighbours = QCheckBox("Measure neighbours")
         self.check_neighbours.setChecked(True)
         self.neighbours_group.glayout.addWidget(self.check_neighbours, 0, 0, 1, 1)
@@ -259,6 +262,7 @@ class SteinposeWidget(QWidget):
         self.qlist_merge_nuclei.itemClicked.connect(self._on_change_merge_nuclei_selection)
         self.qcbox_projection_method.currentTextChanged.connect(self._on_change_merge_cell_selection)
         self.qcbox_projection_method.currentTextChanged.connect(self._on_change_merge_nuclei_selection)
+        self.button_show_merge.clicked.connect(self._on_show_only_merge)
 
         self.btn_export_tiffs.clicked.connect(self._on_export_tiffs)
 
@@ -359,7 +363,19 @@ class SteinposeWidget(QWidget):
                         colormap='cyan',
                         blending='additive')
 
+            self._on_show_only_merge()
+
         return True
+
+    def _on_show_only_merge(self):
+        """Turn off all layers except merged images"""
+
+        self.viewer.layers.select_all()
+        self.viewer.layers.toggle_selected_visibility()
+        if 'merged_cell' in [x.name for x in self.viewer.layers]:
+            self.viewer.layers['merged_cell'].visible = True
+        if 'merged_nuclei' in [x.name for x in self.viewer.layers]:
+            self.viewer.layers['merged_nuclei'].visible = True
 
     def _on_change_expand(self):
         """Expand or shrink mask"""
@@ -613,9 +629,11 @@ class SteinposeWidget(QWidget):
         if self.qcbox_model_choice.currentText() != 'custom':
             self.diameter_label.setVisible(True)
             self.spinbox_diameter.setVisible(True)
+            self.btn_select_cellpose_model.setVisible(False)
         else:
             self.diameter_label.setVisible(False)
             self.spinbox_diameter.setVisible(False)
+            self.btn_select_cellpose_model.setVisible(True)
 
 class VHGroup():
     """Group box with specific layout.
