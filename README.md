@@ -89,6 +89,10 @@ the coverage at least stays the same before you submit a pull request.
 Distributed under the terms of the [BSD-3] license,
 "napari-steinpose" is free and open source software
 
+## Authors
+
+The author of this plugin is Guillaume Witz, Data Science Lab and Microscopy Imaging Center, University of Bern. This plugin is the result of a collaboration with the Imaging Mass Cytometry and Mass Cytometry Platform, University of Bern.
+
 ## Issues
 
 If you encounter any problems, please [file an issue] along with a detailed description.
