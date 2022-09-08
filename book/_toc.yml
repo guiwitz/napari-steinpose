@@ -1,0 +1,4 @@
+format: jb-book
+root: napari_steinpose
+chapters:
+- file: Standard_use
