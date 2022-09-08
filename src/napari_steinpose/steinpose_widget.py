@@ -130,7 +130,7 @@ class SteinposeWidget(QWidget):
         self.qlist_merge_cell.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.channel_merge_group.glayout.addWidget(self.qlist_merge_cell, 1,0,1,2)
 
-        self.channel_merge_group.glayout.addWidget(QLabel('Channels for helpher objects'), 2, 0, 1, 2)
+        self.channel_merge_group.glayout.addWidget(QLabel('Channels for helper objects'), 2, 0, 1, 2)
         self.qlist_merge_nuclei = QListWidget()
         self.qlist_merge_nuclei.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.channel_merge_group.glayout.addWidget(self.qlist_merge_nuclei, 3,0,1,2)
@@ -202,7 +202,7 @@ class SteinposeWidget(QWidget):
         self.check_hpf = QCheckBox('Hot pixel filter')
         self._export_tab_layout.addWidget(self.check_hpf, 2, 0, 1, 1)
         self.spinbox_hpf = QSpinBox()
-        self.spinbox_hpf.setValue(0)
+        self.spinbox_hpf.setValue(50)
         self.spinbox_hpf.setMaximum(1000)
         self._export_tab_layout.addWidget(self.spinbox_hpf, 2, 1, 1, 1)
 
