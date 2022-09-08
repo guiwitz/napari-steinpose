@@ -82,3 +82,9 @@ venv/
 
 # written by setuptools_scm
 **/_version.py
+
+# jupytet book
+/book/_build/
+
+# test output
+/src/napari_steinpose/_tests/data/output/
