@@ -1,6 +1,6 @@
 from qtpy.QtWidgets import (QWidget, QVBoxLayout,QFileDialog, QPushButton,
 QSpinBox, QDoubleSpinBox, QLabel, QGridLayout, QHBoxLayout, QGroupBox, QComboBox, QTabWidget,
-QCheckBox, QListWidget, QAbstractItemView)
+QCheckBox, QListWidget, QAbstractItemView, QTextEdit, QLineEdit)
 from qtpy.QtCore import Qt
 from napari.layers import Image
 
@@ -120,6 +120,14 @@ class SteinposeWidget(QWidget):
 
         self.check_run_steinbock = QCheckBox('Run Steinbock post-processing')
         self.run_group.glayout.addWidget(self.check_run_steinbock, 2, 1, 1, 1)
+
+        self.output_group = VHGroup('Output', orientation='G')
+        self._segmentation_layout.addWidget(self.output_group.gbox)
+        self.num_object_display = QLineEdit()
+        self.num_object_display.setReadOnly(True)
+        self.output_group.glayout.addWidget(QLabel('Num. objects'), 0, 0, 1, 1)
+        self.output_group.glayout.addWidget(self.num_object_display, 0, 1, 1, 1)
+
 
         #/////// Channels tab /////////
         self.channel_merge_group = VHGroup('Merging', orientation='G')
@@ -365,6 +373,7 @@ class SteinposeWidget(QWidget):
             if mask_path.exists():
                 self.mask = skimage.io.imread(mask_path)
                 self.viewer.add_labels(self.mask, name='mask')
+                self.num_object_display.setText(f'{np.max(self.mask)}')
 
         return True
 
@@ -507,7 +516,8 @@ class SteinposeWidget(QWidget):
         self.viewer.layers.events.inserted.disconnect(self._on_change_layers)
 
         self.viewer.add_labels(self.mask, name='mask')
-        
+        self.num_object_display.setText(f'{np.max(self.mask)}')
+
         self.viewer.layers.events.inserted.connect(self._on_change_layers)
 
     def _on_click_run_on_folder(self):
