@@ -121,12 +121,18 @@ class SteinposeWidget(QWidget):
         self.check_run_steinbock = QCheckBox('Run Steinbock post-processing')
         self.run_group.glayout.addWidget(self.check_run_steinbock, 2, 1, 1, 1)
 
-        self.output_group = VHGroup('Output', orientation='G')
+        self.output_group = VHGroup('Infos', orientation='G')
         self._segmentation_layout.addWidget(self.output_group.gbox)
         self.num_object_display = QLineEdit()
         self.num_object_display.setReadOnly(True)
         self.output_group.glayout.addWidget(QLabel('Num. objects'), 0, 0, 1, 1)
         self.output_group.glayout.addWidget(self.num_object_display, 0, 1, 1, 1)
+
+        self.gpu_is_used = QLineEdit()
+        self.gpu_is_used.setReadOnly(True)
+        self.gpu_is_used.setText('Not defined')
+        self.output_group.glayout.addWidget(QLabel('GPU status'), 1, 0, 1, 1)
+        self.output_group.glayout.addWidget(self.gpu_is_used, 1, 1, 1, 1)
 
 
         #/////// Channels tab /////////
@@ -491,6 +497,10 @@ class SteinposeWidget(QWidget):
         image_path = self.file_list.folder_path.joinpath(self.file_list.currentItem().text())
         
         self.cellpose_model, diameter = self.get_cellpose_model(model_type=model_type)
+        if self.cellpose_model.gpu:
+            self.gpu_is_used.setText('GPU is used')
+        else:
+            self.gpu_is_used.setText('GPU is not used')
         
         channel_to_segment, channel_helper = self.get_channels_to_use()
         curr_proj = self.proj[self.qcbox_projection_method.currentText()]
@@ -529,6 +539,10 @@ class SteinposeWidget(QWidget):
         file_list = self.get_file_list()
 
         self.cellpose_model, diameter = self.get_cellpose_model(model_type=model_type)
+        if self.cellpose_model.gpu:
+            self.gpu_is_used.setText('GPU is used')
+        else:
+            self.gpu_is_used.setText('GPU is not used')
 
         channel_to_segment, channel_helper = self.get_channels_to_use()
         curr_proj = self.proj[self.qcbox_projection_method.currentText()]
