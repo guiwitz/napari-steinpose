@@ -90,6 +90,9 @@ class SteinposeWidget(QWidget):
         self.btn_select_output_folder = QPushButton("Select output folder")
         self.folder_group.glayout.addWidget(self.btn_select_output_folder)
 
+        self.check_show_segmentation = QCheckBox("Show existing segmentation")
+        self.folder_group.glayout.addWidget(self.check_show_segmentation)
+
         self.cellpose_group = VHGroup('cellpose', orientation='G')
         self._segmentation_layout.addWidget(self.cellpose_group.gbox)
 
@@ -267,6 +270,7 @@ class SteinposeWidget(QWidget):
         self.btn_select_cellpose_model.clicked.connect(self._on_click_select_cellpose_model)
         self.btn_select_options_file.clicked.connect(self._on_click_select_options_file)
         self.btn_select_output_folder.clicked.connect(self._on_click_select_output_folder)
+        self.check_show_segmentation.stateChanged.connect(self.open_file)
         self.file_list.currentItemChanged.connect(self._on_select_file)
         self.combobox_acquisition.currentIndexChanged.connect(self._on_combobox_acquisition_change)
         self.btn_run_on_current.clicked.connect(self._on_click_run_on_current)
@@ -360,8 +364,7 @@ class SteinposeWidget(QWidget):
 
         self.viewer.add_image(data, channel_axis=0, name=names)
 
-        if self.output_folder is not None:
-            
+        if (self.output_folder is not None) and (self.check_show_segmentation.isChecked()):
             proj_path = Path(self.output_folder).joinpath('imgs_proj').joinpath(f'{image_path.stem}_acq_{self.combobox_acquisition.currentIndex()}_proj.tiff')
             if proj_path.exists():
                 proj = skimage.io.imread(proj_path)
@@ -384,7 +387,7 @@ class SteinposeWidget(QWidget):
                         blending='additive')
             
             self._on_show_only_merge()
-
+            
             mask_path = Path(self.output_folder).joinpath('masks').joinpath(f'{image_path.stem}_acq_{self.combobox_acquisition.currentIndex()}.tiff')
             if mask_path.exists():
                 self.mask = skimage.io.imread(mask_path)
@@ -393,7 +396,8 @@ class SteinposeWidget(QWidget):
 
         if self.reset_channels is True:
             self._on_change_layers()
-        if self.output_folder is None:
+
+        if not self.check_show_segmentation.isChecked():
             self._on_change_merge_cell_selection()
             self._on_change_merge_nuclei_selection()
 
@@ -503,8 +507,8 @@ class SteinposeWidget(QWidget):
                     self.flow_threshold.setValue(val)
                 elif k == 'cellprob_threshold':
                     self.cellprob_threshold.setValue(val)
-                
 
+    
     def _on_click_run_on_current(self):
         """Run cellpose on current image"""
 
@@ -543,6 +547,9 @@ class SteinposeWidget(QWidget):
         self.viewer.add_labels(self.mask, name='mask')
         self.num_object_display.setText(f'{np.max(self.mask)}')
 
+        if self.output_folder is not None:
+            self._on_click_export_configuration()
+
 
     def _on_click_run_on_folder(self):
         """Run cellpose on all images in folder"""
@@ -579,6 +586,9 @@ class SteinposeWidget(QWidget):
                     proj_fun=curr_proj,
                     label_expand=self.spinbox_expand.value()
             )
+
+        if self.output_folder is not None:
+            self._on_click_export_configuration()
         
         if self.check_run_steinbock.isChecked():
             self.run_steinbock_postproc()
