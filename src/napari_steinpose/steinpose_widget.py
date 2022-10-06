@@ -1,3 +1,4 @@
+from typing import ValuesView
 from qtpy.QtWidgets import (QWidget, QVBoxLayout,QFileDialog, QPushButton,
 QSpinBox, QDoubleSpinBox, QLabel, QGridLayout, QHBoxLayout, QGroupBox, QComboBox, QTabWidget,
 QCheckBox, QListWidget, QAbstractItemView, QTextEdit, QLineEdit)
@@ -32,6 +33,8 @@ class SteinposeWidget(QWidget):
         self.options_file_path = None
         self.num_acquisitions = 0
         self.proj = {'mean': np.mean, 'max': np.max, 'min': np.min, 'median': np.median}
+        self.current_image_name = None
+        self.reset_channels = True
 
         self.main_layout = QVBoxLayout()
         self.setLayout(self.main_layout)
@@ -73,9 +76,8 @@ class SteinposeWidget(QWidget):
         self.file_list = FolderList(napari_viewer)
         self.files_group.glayout.addWidget(self.file_list, 1, 0, 1, 2)
 
-        self.slider_acquisition = QSpinBox()
-        self.slider_acquisition.setMinimum(0)
-        self.slider_acquisition.setMaximum(0)
+        self.slider_acquisition = QComboBox()
+        self.slider_acquisition.addItem('0')
         self.files_group.glayout.addWidget(QLabel('ROI'), 2, 0, 1, 1)
         self.files_group.glayout.addWidget(self.slider_acquisition, 2, 1, 1, 1)
 
@@ -266,11 +268,10 @@ class SteinposeWidget(QWidget):
         self.btn_select_options_file.clicked.connect(self._on_click_select_options_file)
         self.btn_select_output_folder.clicked.connect(self._on_click_select_output_folder)
         self.file_list.currentItemChanged.connect(self._on_select_file)
-        self.slider_acquisition.valueChanged.connect(self._on_slider_acquisition_change)
+        self.slider_acquisition.currentIndexChanged.connect(self._on_slider_acquisition_change)
         self.btn_run_on_current.clicked.connect(self._on_click_run_on_current)
         self.btn_run_on_folder.clicked.connect(self._on_click_run_on_folder)
         self.qcbox_model_choice.currentTextChanged.connect(self._on_change_modeltype)
-        self.viewer.layers.events.inserted.connect(self._on_change_layers)
 
         self.qlist_merge_cell.itemClicked.connect(self._on_change_merge_cell_selection)
         self.qlist_merge_nuclei.itemClicked.connect(self._on_change_merge_nuclei_selection)
@@ -296,7 +297,6 @@ class SteinposeWidget(QWidget):
             channel_to_merge_cell = [x.row() for x in self.qlist_merge_cell.selectedIndexes()]
             merged_cell_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_cell], axis=0), axis=0)
        
-        self.viewer.layers.events.inserted.disconnect(self._on_change_layers)
         if 'merged_cell' in [x.name for x in self.viewer.layers]:
             self.viewer.layers['merged_cell'].data = merged_cell_array
         else:
@@ -306,7 +306,6 @@ class SteinposeWidget(QWidget):
                 colormap='magenta',
                 blending='additive')
         
-        self.viewer.layers.events.inserted.connect(self._on_change_layers)
 
     def _on_change_merge_nuclei_selection(self):
         """Create projection of multiple channels for nuclei using selected channels"""
@@ -319,7 +318,6 @@ class SteinposeWidget(QWidget):
             channel_to_merge_nuclei = [x.row() for x in self.qlist_merge_nuclei.selectedIndexes()]
             merged_nuclei_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_nuclei], axis=0), axis=0)
 
-        self.viewer.layers.events.inserted.disconnect(self._on_change_layers)
         
         if 'merged_nuclei' in [x.name for x in self.viewer.layers]:
             self.viewer.layers['merged_nuclei'].data = merged_nuclei_array
@@ -330,13 +328,13 @@ class SteinposeWidget(QWidget):
                 colormap='cyan',
                 blending='additive',
                 )
-        self.viewer.layers.events.inserted.connect(self._on_change_layers)
 
     def open_file(self):
         """Open file selected in list. Returns True if file was opened."""
 
         # clear existing layers.
-        self.viewer.layers.clear()
+        while len(self.viewer.layers) > 0:
+            self.viewer.layers.clear()
         
         # if file list is empty stop here
         if self.file_list.currentItem() is None:
@@ -345,14 +343,27 @@ class SteinposeWidget(QWidget):
         # open image
         image_name = self.file_list.currentItem().text()
         image_path = self.file_list.folder_path.joinpath(image_name)
+        
+        # reset acquisition index if new image is selected
+        if image_name != self.current_image_name:
+            self.current_image_name = image_name
+            #self.slider_acquisition.setCurrentIndex(0)
+            data, _, self.num_acquisitions, names = read_mcd(image_path, 0)
 
-        data, _, self.num_acquisitions, names = read_mcd(image_path, self.slider_acquisition.value())
+            # update acquisition combox and disconnect/connect signal
+            self.slider_acquisition.currentIndexChanged.disconnect(self._on_slider_acquisition_change)
+            self.slider_acquisition.clear()
+            self.slider_acquisition.addItems([f'{x}' for x in range(self.num_acquisitions)])
+            self.slider_acquisition.currentIndexChanged.connect(self._on_slider_acquisition_change)
+
+        else:
+            data, _, self.num_acquisitions, names = read_mcd(image_path, self.slider_acquisition.currentIndex())
+
         self.viewer.add_image(data, channel_axis=0, name=names)
-        self.slider_acquisition.setMaximum(self.num_acquisitions-1)
 
         if self.output_folder is not None:
             
-            proj_path = Path(self.output_folder).joinpath('imgs_proj').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.value()}_proj.tiff')
+            proj_path = Path(self.output_folder).joinpath('imgs_proj').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.currentIndex()}_proj.tiff')
             if proj_path.exists():
                 proj = skimage.io.imread(proj_path)
                 if proj.ndim == 2:
@@ -375,11 +386,17 @@ class SteinposeWidget(QWidget):
             
             self._on_show_only_merge()
 
-            mask_path = Path(self.output_folder).joinpath('masks').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.value()}.tiff')
+            mask_path = Path(self.output_folder).joinpath('masks').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.currentIndex()}.tiff')
             if mask_path.exists():
                 self.mask = skimage.io.imread(mask_path)
                 self.viewer.add_labels(self.mask, name='mask')
                 self.num_object_display.setText(f'{np.max(self.mask)}')
+
+        if self.reset_channels is True:
+            self._on_change_layers()
+        if self.output_folder is None:
+            self._on_change_merge_cell_selection()
+            self._on_change_merge_nuclei_selection()
 
         return True
 
@@ -421,6 +438,7 @@ class SteinposeWidget(QWidget):
 
         file_folder = Path(str(QFileDialog.getExistingDirectory(self, "Select Directory")))
         self.file_list.update_from_path(file_folder)
+        self.reset_channels = True
 
     def _on_click_select_output_folder (self):
         """Interactively select folder where to save results"""
@@ -510,7 +528,7 @@ class SteinposeWidget(QWidget):
             image_path=image_path,
             cellpose_model=self.cellpose_model,
             output_path=self.output_folder,
-            acquisition=self.slider_acquisition.value(),
+            acquisition=self.slider_acquisition.currentIndex(),
             diameter=diameter,
             flow_threshold=self.flow_threshold.value(),
             cellprob_threshold=self.cellprob_threshold.value(),
@@ -523,12 +541,9 @@ class SteinposeWidget(QWidget):
         )
         self.mask = mask[0]
 
-        self.viewer.layers.events.inserted.disconnect(self._on_change_layers)
-
         self.viewer.add_labels(self.mask, name='mask')
         self.num_object_display.setText(f'{np.max(self.mask)}')
 
-        self.viewer.layers.events.inserted.connect(self._on_change_layers)
 
     def _on_click_run_on_folder(self):
         """Run cellpose on all images in folder"""
@@ -647,6 +662,8 @@ class SteinposeWidget(QWidget):
 
         self.qlist_merge_nuclei.clear()
         self.qlist_merge_nuclei.addItems([x.name for x in self.viewer.layers if isinstance(x, Image)])
+
+        self.reset_channels = False
 
     def _on_change_modeltype(self):
         "if selecting non-custom model, show diameter box"
