@@ -76,10 +76,10 @@ class SteinposeWidget(QWidget):
         self.file_list = FolderList(napari_viewer)
         self.files_group.glayout.addWidget(self.file_list, 1, 0, 1, 2)
 
-        self.slider_acquisition = QComboBox()
-        self.slider_acquisition.addItem('0')
+        self.combobox_acquisition = QComboBox()
+        self.combobox_acquisition.addItem('0')
         self.files_group.glayout.addWidget(QLabel('ROI'), 2, 0, 1, 1)
-        self.files_group.glayout.addWidget(self.slider_acquisition, 2, 1, 1, 1)
+        self.files_group.glayout.addWidget(self.combobox_acquisition, 2, 1, 1, 1)
 
         self.folder_group = VHGroup('Folder selection')
         self._segmentation_layout.addWidget(self.folder_group.gbox)
@@ -268,7 +268,7 @@ class SteinposeWidget(QWidget):
         self.btn_select_options_file.clicked.connect(self._on_click_select_options_file)
         self.btn_select_output_folder.clicked.connect(self._on_click_select_output_folder)
         self.file_list.currentItemChanged.connect(self._on_select_file)
-        self.slider_acquisition.currentIndexChanged.connect(self._on_slider_acquisition_change)
+        self.combobox_acquisition.currentIndexChanged.connect(self._on_combobox_acquisition_change)
         self.btn_run_on_current.clicked.connect(self._on_click_run_on_current)
         self.btn_run_on_folder.clicked.connect(self._on_click_run_on_folder)
         self.qcbox_model_choice.currentTextChanged.connect(self._on_change_modeltype)
@@ -347,23 +347,22 @@ class SteinposeWidget(QWidget):
         # reset acquisition index if new image is selected
         if image_name != self.current_image_name:
             self.current_image_name = image_name
-            #self.slider_acquisition.setCurrentIndex(0)
             data, _, self.num_acquisitions, names = read_mcd(image_path, 0)
 
             # update acquisition combox and disconnect/connect signal
-            self.slider_acquisition.currentIndexChanged.disconnect(self._on_slider_acquisition_change)
-            self.slider_acquisition.clear()
-            self.slider_acquisition.addItems([f'{x}' for x in range(self.num_acquisitions)])
-            self.slider_acquisition.currentIndexChanged.connect(self._on_slider_acquisition_change)
+            self.combobox_acquisition.currentIndexChanged.disconnect(self._on_combobox_acquisition_change)
+            self.combobox_acquisition.clear()
+            self.combobox_acquisition.addItems([f'{x}' for x in range(self.num_acquisitions)])
+            self.combobox_acquisition.currentIndexChanged.connect(self._on_combobox_acquisition_change)
 
         else:
-            data, _, self.num_acquisitions, names = read_mcd(image_path, self.slider_acquisition.currentIndex())
+            data, _, self.num_acquisitions, names = read_mcd(image_path, self.combobox_acquisition.currentIndex())
 
         self.viewer.add_image(data, channel_axis=0, name=names)
 
         if self.output_folder is not None:
             
-            proj_path = Path(self.output_folder).joinpath('imgs_proj').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.currentIndex()}_proj.tiff')
+            proj_path = Path(self.output_folder).joinpath('imgs_proj').joinpath(f'{image_path.stem}_acq_{self.combobox_acquisition.currentIndex()}_proj.tiff')
             if proj_path.exists():
                 proj = skimage.io.imread(proj_path)
                 if proj.ndim == 2:
@@ -386,7 +385,7 @@ class SteinposeWidget(QWidget):
             
             self._on_show_only_merge()
 
-            mask_path = Path(self.output_folder).joinpath('masks').joinpath(f'{image_path.stem}_acq_{self.slider_acquisition.currentIndex()}.tiff')
+            mask_path = Path(self.output_folder).joinpath('masks').joinpath(f'{image_path.stem}_acq_{self.combobox_acquisition.currentIndex()}.tiff')
             if mask_path.exists():
                 self.mask = skimage.io.imread(mask_path)
                 self.viewer.add_labels(self.mask, name='mask')
@@ -429,7 +428,7 @@ class SteinposeWidget(QWidget):
         for f in file_list:
             export_for_steinbock(f, self.output_folder, hpf=(self.spinbox_hpf.value() if self.check_hpf.isChecked() else None))
 
-    def _on_slider_acquisition_change(self):
+    def _on_combobox_acquisition_change(self):
 
         self.open_file()
 
@@ -528,7 +527,7 @@ class SteinposeWidget(QWidget):
             image_path=image_path,
             cellpose_model=self.cellpose_model,
             output_path=self.output_folder,
-            acquisition=self.slider_acquisition.currentIndex(),
+            acquisition=self.combobox_acquisition.currentIndex(),
             diameter=diameter,
             flow_threshold=self.flow_threshold.value(),
             cellprob_threshold=self.cellprob_threshold.value(),
