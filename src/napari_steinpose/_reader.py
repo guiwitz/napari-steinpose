@@ -81,8 +81,8 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
         The acquisition id to read.
     rescale_percentile: bool
         rescale the intensity
-    planes_to_load : array
-        1d array of planes to load
+    planes_to_load : int or list of int
+        list of planes to load
 
     Returns
     -------
@@ -95,6 +95,9 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
     names : list of str
         The channel names from the mcd file.
     """
+
+    if isinstance(planes_to_load, int):
+        planes_to_load = [planes_to_load]
 
     path = Path(path)
     if path.suffix == ".mcd":
