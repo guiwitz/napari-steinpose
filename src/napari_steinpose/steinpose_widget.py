@@ -15,7 +15,8 @@ import skimage.io
 import numpy as np
 from cellpose import models
 import yaml
-from .imc_analysis import measure_intensities_steinbock, measure_neighborhood_steinbock, measure_region_props_steinbock
+from .imc_analysis import (measure_intensities_steinbock, measure_neighborhood_steinbock,
+measure_region_props_steinbock, estimate_diameter)
 
 
 class SteinposeWidget(QWidget):
@@ -110,6 +111,8 @@ class SteinposeWidget(QWidget):
         self.spinbox_diameter.setValue(30)
         self.spinbox_diameter.setMaximum(1000)
         self.cellpose_group.glayout.addWidget(self.spinbox_diameter, 2, 1, 1, 1)
+        self.btn_estimate_diameter = QPushButton("Estimate diameter", visible=False)
+        self.cellpose_group.glayout.addWidget(self.btn_estimate_diameter, 3, 0, 1, 2)
 
         self.run_group = VHGroup('Run analysis', orientation='G')
         self._segmentation_layout.addWidget(self.run_group.gbox)
@@ -276,6 +279,7 @@ class SteinposeWidget(QWidget):
         self.btn_run_on_current.clicked.connect(self._on_click_run_on_current)
         self.btn_run_on_folder.clicked.connect(self._on_click_run_on_folder)
         self.qcbox_model_choice.currentTextChanged.connect(self._on_change_modeltype)
+        self.btn_estimate_diameter.clicked.connect(self._on_click_estimate_diameter)
 
         self.qlist_merge_cell.itemClicked.connect(self._on_change_merge_cell_selection)
         self.qlist_merge_nuclei.itemClicked.connect(self._on_change_merge_nuclei_selection)
@@ -412,6 +416,25 @@ class SteinposeWidget(QWidget):
             self.viewer.layers['merged_cell'].visible = True
         if 'merged_nuclei' in [x.name for x in self.viewer.layers]:
             self.viewer.layers['merged_nuclei'].visible = True
+
+    def _on_click_estimate_diameter(self):
+        
+        image_path = self.file_list.folder_path.joinpath(self.file_list.currentItem().text())
+        channel_to_segment, channel_helper = self.get_channels_to_use()
+        curr_proj = self.proj[self.qcbox_projection_method.currentText()]
+
+
+        diameter = estimate_diameter(
+            image_path=image_path,
+            acquisition=self.combobox_acquisition.currentIndex(),
+            channel_to_segment=channel_to_segment,
+            channel_helper=channel_helper,
+            proj_fun=curr_proj,
+            use_gpu=self.check_usegpu.isChecked(),
+        )
+
+        self.spinbox_diameter.setValue(diameter)
+        
 
     def _on_change_expand(self):
         """Expand or shrink mask"""
@@ -681,10 +704,12 @@ class SteinposeWidget(QWidget):
             self.diameter_label.setVisible(True)
             self.spinbox_diameter.setVisible(True)
             self.btn_select_cellpose_model.setVisible(False)
+            self.btn_estimate_diameter.setVisible(True)
         else:
             self.diameter_label.setVisible(False)
             self.spinbox_diameter.setVisible(False)
             self.btn_select_cellpose_model.setVisible(True)
+            self.btn_estimate_diameter.setVisible(False)
 
 class VHGroup():
     """Group box with specific layout.

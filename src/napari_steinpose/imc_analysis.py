@@ -9,6 +9,7 @@ from readimc import MCDFile
 from ._reader import read_mcd
 from aicsimageio.writers import OmeTiffWriter
 from aicsimageio import AICSImage
+from cellpose import models
 
 from steinbock.measurement.intensities import IntensityAggregation
 from steinbock.measurement.neighbors import NeighborhoodType
@@ -58,10 +59,10 @@ def run_cellpose(image_path, cellpose_model, output_path, acquisition=0,
         cellpose setting: pixels greater than the cellprob_threshold are used to run dynamics and determine ROIs
     clear_border : bool
         remove cells touching border
-    channel_to_segment : int, default 0
-        index of channel to segment, if image is multi-channel
-    channel_helper : int, default 0
-        index of helper nucleus channel for models using both cell and nucleus channels
+    channel_to_segment : int or list of int, default None
+        indices of channels to combine for segmentation
+    channel_helper : int or list of int, default None
+        indices of channels to combined as nucleus channel for models using both cell and nucleus channels
     options_file: str or Path, default None
         path to yaml options file for cellpose
     proj_fun: function
@@ -137,6 +138,53 @@ def run_cellpose(image_path, cellpose_model, output_path, acquisition=0,
             skimage.io.imsave(save_path, im_proj, check_contrast=False)
 
     return cellpose_output
+
+def estimate_diameter(
+    image_path, acquisition=0, channel_to_segment=None,
+    channel_helper=None, proj_fun=np.max, use_gpu=False):
+    
+    """Estimate diameter using cyto model.
+    
+    Parameters
+    ----------
+    image_path : str or Path
+        path to image
+    acquisition : int
+        acquisition number
+    channel_to_segment : int, default 0
+        index of channel to segment, if image is multi-channel
+    channel_helper : int, default 0
+        index of helper nucleus channel for models using both cell and nucleus channels
+    proj_fun: function
+        function used to compute projection, default np.max
+    use_gpu: bool
+        instantiate model on GPU, default False
+
+    Returns
+    -------
+    diam : float
+        estimated diameter
+    """
+    
+    if channel_to_segment is None:
+        raise ValueError("channel_to_segment must be specified")
+
+    channels = [0, 0]        
+    cur_image = create_composite_proj(image_path, acquisition, True, channel_to_segment, proj_fun=proj_fun)
+
+    if channel_helper is not None:
+        image_nuclei = create_composite_proj(image_path, acquisition, True, channel_helper, proj_fun=proj_fun)
+
+        cur_image = np.stack([cur_image, image_nuclei], axis=0)
+        channels = [1, 2]
+    
+    model_diam = models.Cellpose(gpu=use_gpu, model_type='cyto')
+
+    diams, _ = model_diam.sz.eval(cur_image, channels=channels, channel_axis=0)
+    diams = np.maximum(5.0, diams)
+
+    return diams
+    
 
 def create_composite_proj(mcd_path, acquisition, rescale_percentile, planes_to_load, proj_fun=np.max):
     
