@@ -187,7 +187,28 @@ def estimate_diameter(
     
 
 def create_composite_proj(mcd_path, acquisition, rescale_percentile, planes_to_load, proj_fun=np.max):
+    """Create composite projection from channels of an MCD file.
     
+    Parameters
+    ----------
+    mcd_path : str or Path
+        path to MCD file
+    acquisition : int
+        acquisition index
+    rescale_percentile: bool
+        rescale the intensity
+    planes_to_load : int or list of int
+        indices of planes to project
+    proj_fun: function
+        function used to compute projection, default np.max
+    
+    Returns
+    -------
+    composite_proj : array
+        composite projection image
+        
+    """
+
     cur_image, _, _, _ = read_mcd(mcd_path, acquisition_id=acquisition, rescale_percentile=rescale_percentile, planes_to_load=planes_to_load)
     cur_image = proj_fun(cur_image, axis=0)
     cur_image = (255*(cur_image / cur_image.max())).astype(np.uint8)
@@ -220,7 +241,7 @@ def export_for_steinbock(path, export_path, hpf=None):
         OmeTiffWriter.save(data, p.joinpath(f'{path.stem}_acq_{i}.tiff'), dim_order="CYX")
 
 def create_panel_file(mcd_path, export_path):
-    """Create panel file for Steinbock
+    """Create panel.csv file for Steinbock
 
     Parameters
     ----------
@@ -238,6 +259,18 @@ def create_panel_file(mcd_path, export_path):
 
 
 def create_images_file(file_list_mcd, export_path):
+    """Create images.csv file for Steinbock
+
+    Parameters
+    ----------
+    file_list_mcd : list of str or Path
+        list of paths to mcd files
+    export_path : str or Path
+        path to folder where to export
+    """
+
+    export_path = Path(export_path)
+    file_list_mcd = [Path(f) for f in file_list_mcd]
 
     image_info_data = []
 
