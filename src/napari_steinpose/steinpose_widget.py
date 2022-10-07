@@ -343,6 +343,7 @@ class SteinposeWidget(QWidget):
         # clear existing layers.
         while len(self.viewer.layers) > 0:
             self.viewer.layers.clear()
+        self.num_object_display.setText('None')
         
         # if file list is empty stop here
         if self.file_list.currentItem() is None:
