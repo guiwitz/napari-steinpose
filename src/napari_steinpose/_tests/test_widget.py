@@ -63,8 +63,8 @@ def test_create_merged_images(make_napari_viewer):
     widget._on_change_merge_cell_selection()
     widget._on_change_merge_nuclei_selection()
 
-    assert viewer.layers[-1].name == 'merged_nuclei'
-    assert viewer.layers[-2].name == 'merged_cell'
+    assert viewer.layers[-1].name == 'merged_helper'
+    assert viewer.layers[-2].name == 'merged_main'
 
 @pytest.mark.order(1)
 def test_segmentation(make_napari_viewer):

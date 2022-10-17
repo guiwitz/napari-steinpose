@@ -300,31 +300,31 @@ class SteinposeWidget(QWidget):
         curr_proj = self.proj[self.qcbox_projection_method.currentText()]
 
         channel_to_merge_cell = []
-        merged_cell_array = None#np.zeros((20,20), dtype=np.uint8)
+        merged_main_array = None#np.zeros((20,20), dtype=np.uint8)
         if len(self.qlist_merge_cell.selectedItems()) > 0:
             channel_to_merge_cell = [x.row() for x in self.qlist_merge_cell.selectedIndexes()]
-            merged_cell_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_cell], axis=0), axis=0)
+            merged_main_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_cell], axis=0), axis=0)
        
-        if 'merged_cell' in [x.name for x in self.viewer.layers]:
-            if merged_cell_array is not None:
-                self.viewer.layers['merged_cell'].data = merged_cell_array
+        if 'merged_main' in [x.name for x in self.viewer.layers]:
+            if merged_main_array is not None:
+                self.viewer.layers['merged_main'].data = merged_main_array
             else:
-                self.viewer.layers.remove('merged_cell')
+                self.viewer.layers.remove('merged_main')
         else:
-            if merged_cell_array is not None:
+            if merged_main_array is not None:
                 self.viewer.add_image(
-                    merged_cell_array,
-                    name='merged_cell',
+                    merged_main_array,
+                    name='merged_main',
                     colormap='magenta',
                     blending='additive')
 
-        if merged_cell_array is not None:
-            min_val, max_val = (merged_cell_array.min(), merged_cell_array.max())
+        if merged_main_array is not None:
+            min_val, max_val = (merged_main_array.min(), merged_main_array.max())
             if max_val == 0:
                 max_val = 1
 
-            self.viewer.layers['merged_cell'].contrast_limits_range = (min_val, max_val)
-            self.viewer.layers['merged_cell'].contrast_limits = (min_val, max_val)
+            self.viewer.layers['merged_main'].contrast_limits_range = (min_val, max_val)
+            self.viewer.layers['merged_main'].contrast_limits = (min_val, max_val)
         
 
     def _on_change_merge_nuclei_selection(self):
@@ -333,32 +333,32 @@ class SteinposeWidget(QWidget):
         curr_proj = self.proj[self.qcbox_projection_method.currentText()]
 
         channel_to_merge_nuclei = []
-        merged_nuclei_array = None#np.zeros((20,20), dtype=np.uint8)
+        merged_helper_array = None#np.zeros((20,20), dtype=np.uint8)
         if len(self.qlist_merge_nuclei.selectedItems()) > 0:
             channel_to_merge_nuclei = [x.row() for x in self.qlist_merge_nuclei.selectedIndexes()]
-            merged_nuclei_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_nuclei], axis=0), axis=0)
+            merged_helper_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_nuclei], axis=0), axis=0)
 
         
-        if 'merged_nuclei' in [x.name for x in self.viewer.layers]:
-            if merged_nuclei_array is not None:
-                self.viewer.layers['merged_nuclei'].data = merged_nuclei_array
+        if 'merged_helper' in [x.name for x in self.viewer.layers]:
+            if merged_helper_array is not None:
+                self.viewer.layers['merged_helper'].data = merged_helper_array
             else:
-                self.viewer.layers.remove('merged_nuclei')
+                self.viewer.layers.remove('merged_helper')
         else:
-            if merged_nuclei_array is not None:
+            if merged_helper_array is not None:
                 self.viewer.add_image(
-                    merged_nuclei_array,
-                    name='merged_nuclei',
+                    merged_helper_array,
+                    name='merged_helper',
                     colormap='cyan',
                     blending='additive',
                     )
         
-        if merged_nuclei_array is not None:
-            min_val, max_val = (merged_nuclei_array.min(), merged_nuclei_array.max())
+        if merged_helper_array is not None:
+            min_val, max_val = (merged_helper_array.min(), merged_helper_array.max())
             if max_val == 0:
                 max_val = 1
-            self.viewer.layers['merged_nuclei'].contrast_limits_range = (min_val, max_val)
-            self.viewer.layers['merged_nuclei'].contrast_limits = (min_val, max_val)
+            self.viewer.layers['merged_helper'].contrast_limits_range = (min_val, max_val)
+            self.viewer.layers['merged_helper'].contrast_limits = (min_val, max_val)
 
     def open_file(self):
         """Open file selected in list. Returns True if file was opened."""
@@ -399,18 +399,18 @@ class SteinposeWidget(QWidget):
                 if proj.ndim == 2:
                     self.viewer.add_image(
                         proj,
-                        name='merged_cell',
+                        name='merged_main',
                         colormap='magenta',
                         blending='additive')
                 elif proj.ndim == 3:
                     self.viewer.add_image(
                         proj[0,:,:],
-                        name='merged_cell',
+                        name='merged_main',
                         colormap='magenta',
                         blending='additive')
                     self.viewer.add_image(
                         proj[1,:,:],
-                        name='merged_nuclei',
+                        name='merged_helper',
                         colormap='cyan',
                         blending='additive')
             
@@ -436,10 +436,10 @@ class SteinposeWidget(QWidget):
 
         self.viewer.layers.select_all()
         self.viewer.layers.toggle_selected_visibility()
-        if 'merged_cell' in [x.name for x in self.viewer.layers]:
-            self.viewer.layers['merged_cell'].visible = True
-        if 'merged_nuclei' in [x.name for x in self.viewer.layers]:
-            self.viewer.layers['merged_nuclei'].visible = True
+        if 'merged_main' in [x.name for x in self.viewer.layers]:
+            self.viewer.layers['merged_main'].visible = True
+        if 'merged_helper' in [x.name for x in self.viewer.layers]:
+            self.viewer.layers['merged_helper'].visible = True
 
     def _on_click_estimate_diameter(self):
         
