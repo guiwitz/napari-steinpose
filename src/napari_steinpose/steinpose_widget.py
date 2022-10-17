@@ -300,26 +300,31 @@ class SteinposeWidget(QWidget):
         curr_proj = self.proj[self.qcbox_projection_method.currentText()]
 
         channel_to_merge_cell = []
-        merged_cell_array = np.zeros((20,20), dtype=np.uint8)
+        merged_cell_array = None#np.zeros((20,20), dtype=np.uint8)
         if len(self.qlist_merge_cell.selectedItems()) > 0:
             channel_to_merge_cell = [x.row() for x in self.qlist_merge_cell.selectedIndexes()]
             merged_cell_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_cell], axis=0), axis=0)
        
         if 'merged_cell' in [x.name for x in self.viewer.layers]:
-            self.viewer.layers['merged_cell'].data = merged_cell_array
+            if merged_cell_array is not None:
+                self.viewer.layers['merged_cell'].data = merged_cell_array
+            else:
+                self.viewer.layers.remove('merged_cell')
         else:
-            self.viewer.add_image(
-                merged_cell_array,
-                name='merged_cell',
-                colormap='magenta',
-                blending='additive')
+            if merged_cell_array is not None:
+                self.viewer.add_image(
+                    merged_cell_array,
+                    name='merged_cell',
+                    colormap='magenta',
+                    blending='additive')
 
-        min_val, max_val = (merged_cell_array.min(), merged_cell_array.max())
-        if max_val == 0:
-            max_val = 1
+        if merged_cell_array is not None:
+            min_val, max_val = (merged_cell_array.min(), merged_cell_array.max())
+            if max_val == 0:
+                max_val = 1
 
-        self.viewer.layers['merged_cell'].contrast_limits_range = (min_val, max_val)
-        self.viewer.layers['merged_cell'].contrast_limits = (min_val, max_val)
+            self.viewer.layers['merged_cell'].contrast_limits_range = (min_val, max_val)
+            self.viewer.layers['merged_cell'].contrast_limits = (min_val, max_val)
         
 
     def _on_change_merge_nuclei_selection(self):
@@ -328,26 +333,32 @@ class SteinposeWidget(QWidget):
         curr_proj = self.proj[self.qcbox_projection_method.currentText()]
 
         channel_to_merge_nuclei = []
-        merged_nuclei_array = np.zeros((20,20), dtype=np.uint8)
+        merged_nuclei_array = None#np.zeros((20,20), dtype=np.uint8)
         if len(self.qlist_merge_nuclei.selectedItems()) > 0:
             channel_to_merge_nuclei = [x.row() for x in self.qlist_merge_nuclei.selectedIndexes()]
             merged_nuclei_array = curr_proj(np.stack([self.viewer.layers[x].data for x in channel_to_merge_nuclei], axis=0), axis=0)
 
         
         if 'merged_nuclei' in [x.name for x in self.viewer.layers]:
-            self.viewer.layers['merged_nuclei'].data = merged_nuclei_array
+            if merged_nuclei_array is not None:
+                self.viewer.layers['merged_nuclei'].data = merged_nuclei_array
+            else:
+                self.viewer.layers.remove('merged_nuclei')
         else:
-            self.viewer.add_image(
-                merged_nuclei_array,
-                name='merged_nuclei',
-                colormap='cyan',
-                blending='additive',
-                )
-        min_val, max_val = (merged_nuclei_array.min(), merged_nuclei_array.max())
-        if max_val == 0:
-            max_val = 1
-        self.viewer.layers['merged_nuclei'].contrast_limits_range = (min_val, max_val)
-        self.viewer.layers['merged_nuclei'].contrast_limits = (min_val, max_val)
+            if merged_nuclei_array is not None:
+                self.viewer.add_image(
+                    merged_nuclei_array,
+                    name='merged_nuclei',
+                    colormap='cyan',
+                    blending='additive',
+                    )
+        
+        if merged_nuclei_array is not None:
+            min_val, max_val = (merged_nuclei_array.min(), merged_nuclei_array.max())
+            if max_val == 0:
+                max_val = 1
+            self.viewer.layers['merged_nuclei'].contrast_limits_range = (min_val, max_val)
+            self.viewer.layers['merged_nuclei'].contrast_limits = (min_val, max_val)
 
     def open_file(self):
         """Open file selected in list. Returns True if file was opened."""

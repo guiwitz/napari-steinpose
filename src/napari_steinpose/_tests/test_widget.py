@@ -35,7 +35,7 @@ def test_select_file(make_napari_viewer):
     
     widget.file_list.setCurrentRow(0)
 
-    assert len(viewer.layers) == 50, "Wrong number of channels"
+    assert len(viewer.layers) == 48, "Wrong number of channels"
 
     assert widget.qlist_merge_cell.count() == 48, "Wrong number of channels in cell merge list"
     assert widget.qlist_merge_nuclei.count() == 48, "Wrong number of channels in nuclei merge list"
