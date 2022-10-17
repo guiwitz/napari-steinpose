@@ -196,8 +196,9 @@ class SteinposeWidget(QWidget):
         self.expand_label = QLabel("Expansion (px)")
         self.options_group.glayout.addWidget(self.expand_label, 6, 0, 1, 1)
         self.spinbox_expand = QSpinBox()
-        self.spinbox_expand.setValue(0)
+        self.spinbox_expand.setMinimum(-20)
         self.spinbox_expand.setMaximum(20)
+        self.spinbox_expand.setValue(0)
         self.options_group.glayout.addWidget(self.spinbox_expand, 6, 1, 1, 1)
 
         self.btn_select_options_file = QPushButton("Select options yaml file")
@@ -463,8 +464,14 @@ class SteinposeWidget(QWidget):
     def _on_change_expand(self):
         """Expand or shrink mask"""
 
-        if 'mask' in [x.name for x in self.viewer.layers]:
-            mask = skimage.segmentation.expand_labels(self.mask, self.spinbox_expand.value())
+        if ('mask' in [x.name for x in self.viewer.layers]):
+            if self.spinbox_expand.value() > 0:
+                mask = skimage.segmentation.expand_labels(self.mask, self.spinbox_expand.value())
+            elif self.spinbox_expand.value() < 0:
+                mask = skimage.morphology.erosion(self.mask, skimage.morphology.disk(-self.spinbox_expand.value()))
+            elif self.spinbox_expand.value() == 0:
+                mask = self.mask
+            
             self.viewer.layers['mask'].data = mask
 
     def _on_export_tiffs(self):
