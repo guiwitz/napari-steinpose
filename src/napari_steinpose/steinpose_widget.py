@@ -313,6 +313,13 @@ class SteinposeWidget(QWidget):
                 name='merged_cell',
                 colormap='magenta',
                 blending='additive')
+
+        min_val, max_val = (merged_cell_array.min(), merged_cell_array.max())
+        if max_val == 0:
+            max_val = 1
+
+        self.viewer.layers['merged_cell'].contrast_limits_range = (min_val, max_val)
+        self.viewer.layers['merged_cell'].contrast_limits = (min_val, max_val)
         
 
     def _on_change_merge_nuclei_selection(self):
@@ -336,6 +343,11 @@ class SteinposeWidget(QWidget):
                 colormap='cyan',
                 blending='additive',
                 )
+        min_val, max_val = (merged_nuclei_array.min(), merged_nuclei_array.max())
+        if max_val == 0:
+            max_val = 1
+        self.viewer.layers['merged_nuclei'].contrast_limits_range = (min_val, max_val)
+        self.viewer.layers['merged_nuclei'].contrast_limits = (min_val, max_val)
 
     def open_file(self):
         """Open file selected in list. Returns True if file was opened."""
