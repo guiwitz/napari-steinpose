@@ -117,6 +117,16 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
         num_acquisitions = im_aics.dims.T
     else:
         raise ValueError("File is not an mcd file nor a ome tiff file.")
+    
+    # fill empty target names with metal names. If metal name is empty, use unlabelled name
+    unlabel_count = 1
+    for i, n in enumerate(names):
+        if n == '':
+            if channels[i] == '':
+                names[i] = 'unlabelled_' + str(unlabel_count)
+                unlabel_count += 1
+            else:
+                names[i] = channels[i]
 
     if planes_to_load is not None:
         data = data[planes_to_load]
