@@ -18,7 +18,7 @@ In order to use this plugin, whe highly recommend to create a specific environme
 Then activate it and install the plugin:
     
     conda activate steinpose
-    pip install git+https://github.com/guiwitz/napari-steinpose.git
+    pip install napari-steinpose
 
 ### Potential issue with PyTorch
 
@@ -48,6 +48,8 @@ To update the plugin, you only need to activate the existing environment and ins
     pip install git+https://github.com/guiwitz/napari-steinpose.git -U
 
 ## Usage
+
+Here is a short summary on how to proceed to use the plugin. For more detailed information, please visit [this page](https://guiwitz.github.io/napari-steinpose).
 
 ### Load data
 
