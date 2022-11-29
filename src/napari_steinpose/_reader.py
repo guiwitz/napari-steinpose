@@ -145,10 +145,36 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
 
     return data, channels, num_acquisitions, names
 
-def get_actual_num_acquisition(acquisitions):
-    """Keep only acquisitions where number of channels is larger than zero. 
+def get_actual_num_acquisition(acquisitions, path=None):
+    """
+    Keep only acquisitions where number of channels is larger than zero. 
     This is to avoid acquisitions where the stage was moved but no image was taken.
-    This assumes that missing acquisitions are at the end of the list."""
+    This assumes that missing acquisitions are at the end of the list
+    
+    Parameters
+    ----------
+    acquisitions : list of Acquisition
+        The acquisitions to check.
+    path : str
+        Path to mcd file
+
+    Returns
+    -------
+    num_acquisitions : int
+        The number of acquisitions in the mcd file.
+    
+    """
+
+    if acquisitions is None:
+        if path is not None:
+            path = Path(path)
+        else:
+            raise ValueError("Either acquisitions or path must be provided.")
+        if path.suffix == ".mcd":
+            with MCDFile(path) as f:
+                acquisitions = f.slides[0].acquisitions
+        else:
+            raise ValueError("File is not an mcd file.")
 
     num_acquisitions_all = [x.num_channels for x in acquisitions]
     num_acquisitions = [x for x in num_acquisitions_all if x > 0]
