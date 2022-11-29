@@ -71,7 +71,8 @@ def reader_function(path):
     layer_type = "image"  # optional, default is "image"
     return (data, add_kwargs, layer_type)
 
-def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=None):
+def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=None,
+             only_metadata=False):
     """Read an mcd file and return the data, labels and number of acquisitions.
 
     Parameters
@@ -84,6 +85,8 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
         rescale the intensity
     planes_to_load : int or list of int
         list of planes to load
+    only_metadata : bool
+        Only return the metadata
 
     Returns
     -------
@@ -100,26 +103,29 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
     if isinstance(planes_to_load, int):
         planes_to_load = [planes_to_load]
 
+    data = None
     path = Path(path)
     if path.suffix == ".mcd":
         with MCDFile(path) as f:
-            num_acquisitions = get_actual_num_acquisition(f.slides[0].acquisitions)
+            num_acquisitions = get_actual_num_acquisition(acquisitions=f.slides[0].acquisitions)
             if acquisition_id > num_acquisitions:
                 raise ValueError(f"acquisition_id {acquisition_id} is larger than the number of acquisitions {num_acquisitions}. Probably missing roi.")
             else:
                 acquisition = f.slides[0].acquisitions[acquisition_id]  # first acquisition of first slide
-                data = f.read_acquisition(acquisition)   
+                if only_metadata == False:
+                    data = f.read_acquisition(acquisition)   
       
         names = acquisition.channel_labels
         channels = acquisition.channel_names
     
     elif path.suffix == ".tiff":
         im_aics = AICSImage(path)
-        data = im_aics.get_image_data(dimension_order_out='CYX', T=acquisition_id)
         names_labels = im_aics.channel_names
         channels = [x.split('/')[0] for x in names_labels]
         names = [x.split('/')[1] for x in names_labels]
         num_acquisitions = im_aics.dims.T
+        if only_metadata == False:
+            data = im_aics.get_image_data(dimension_order_out='CYX', T=acquisition_id)
     else:
         raise ValueError("File is not an mcd file nor a ome tiff file.")
     
@@ -133,15 +139,16 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
             else:
                 names[i] = channels[i]
 
-    if planes_to_load is not None:
-        data = data[planes_to_load]
-        channels = np.array(channels)[planes_to_load]
-        names = np.array(names)[planes_to_load]
+    if only_metadata == False:
+        if planes_to_load is not None:
+            data = data[planes_to_load]
+            channels = np.array(channels)[planes_to_load]
+            names = np.array(names)[planes_to_load]
 
-    if rescale_percentile is True:
-        for i in range(len(data)):
-            p2, p98 = np.percentile(data[i], (2, 98))
-            data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
+        if rescale_percentile is True:
+            for i in range(len(data)):
+                p2, p98 = np.percentile(data[i], (2, 98))
+                data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
 
     return data, channels, num_acquisitions, names
 
