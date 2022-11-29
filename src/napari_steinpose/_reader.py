@@ -145,7 +145,7 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
 
     return data, channels, num_acquisitions, names
 
-def get_actual_num_acquisition(acquisitions, path=None):
+def get_actual_num_acquisition(acquisitions=None, path=None):
     """
     Keep only acquisitions where number of channels is larger than zero. 
     This is to avoid acquisitions where the stage was moved but no image was taken.
