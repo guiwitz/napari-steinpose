@@ -623,7 +623,8 @@ class SteinposeWidget(QWidget):
         curr_proj = self.proj[self.qcbox_projection_method.currentText()]
 
         for f in file_list:
-            for acq in range(self.num_acquisitions):
+            _, _, current_num_acquisition, _ = read_mcd(path=f, only_metadata=True)
+            for acq in range(current_num_acquisition):
                 print(f'Running cellpose on {f.name} acquisition {acq}')
                 _ = run_cellpose(
                     image_path=f,
