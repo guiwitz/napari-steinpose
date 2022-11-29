@@ -6,7 +6,7 @@ import pandas as pd
 import numpy as np
 import yaml
 from readimc import MCDFile
-from ._reader import read_mcd
+from ._reader import read_mcd, get_actual_num_acquisition
 from aicsimageio.writers import OmeTiffWriter
 from aicsimageio import AICSImage
 from cellpose import models
@@ -277,7 +277,7 @@ def create_images_file(file_list_mcd, export_path):
     for img_file in file_list_mcd:
         if img_file.suffix == '.mcd':
             with MCDFile(img_file) as f:
-                num_acquisitions = len(f.slides[0].acquisitions)
+                num_acquisitions = get_actual_num_acquisition(f.slides[0].acquisitions)
                 
                 for i in range(num_acquisitions):
                     acquisition = f.slides[0].acquisitions[i]  # first acquisition of first slide

@@ -3,6 +3,7 @@ from readimc import MCDFile
 import skimage
 from aicsimageio import AICSImage
 from pathlib import Path
+import warnings
 
 def napari_get_reader_mcd(path):
     """A basic implementation of a Reader contribution.
@@ -102,9 +103,13 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
     path = Path(path)
     if path.suffix == ".mcd":
         with MCDFile(path) as f:
-            num_acquisitions = len(f.slides[0].acquisitions)
-            acquisition = f.slides[0].acquisitions[acquisition_id]  # first acquisition of first slide
-            data = f.read_acquisition(acquisition)
+            num_acquisitions = get_actual_num_acquisition(f.slides[0].acquisitions)
+            if acquisition_id > num_acquisitions:
+                raise ValueError(f"acquisition_id {acquisition_id} is larger than the number of acquisitions {num_acquisitions}. Probably missing roi.")
+            else:
+                acquisition = f.slides[0].acquisitions[acquisition_id]  # first acquisition of first slide
+                data = f.read_acquisition(acquisition)   
+      
         names = acquisition.channel_labels
         channels = acquisition.channel_names
     
@@ -139,3 +144,16 @@ def read_mcd(path, acquisition_id=0, rescale_percentile=True, planes_to_load=Non
             data[i] = skimage.exposure.rescale_intensity(data[i], in_range=(p2, p98))
 
     return data, channels, num_acquisitions, names
+
+def get_actual_num_acquisition(acquisitions):
+    """Keep only acquisitions where number of channels is larger than zero. 
+    This is to avoid acquisitions where the stage was moved but no image was taken.
+    This assumes that missing acquisitions are at the end of the list."""
+
+    num_acquisitions_all = [x.num_channels for x in acquisitions]
+    num_acquisitions = [x for x in num_acquisitions_all if x > 0]
+    
+    if len(num_acquisitions) < len(num_acquisitions_all):
+        warnings.warn(f"Probably missing rois.")
+
+    return len(num_acquisitions)
